@@ -1,4 +1,4 @@
 # Membres
-PRATHEUANGSINH Nicolas
-BEC Melinda
-GNANASEKARAN Agaravan
+- PRATHEUANGSINH Nicolas
+- BEC Melinda
+- GNANASEKARAN Agaravan
