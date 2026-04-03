@@ -1,0 +1,159 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f7fb;
+  color: #1f2937;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card,
+.card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 430px;
+  padding: 28px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: white;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+.subtitle {
+  color: #64748b;
+  margin: 6px 0 0;
+}
+
+.nav {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 24px;
+}
+
+.nav a {
+  text-decoration: none;
+  color: #0f172a;
+  background: white;
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  gap: 24px;
+  padding: 24px;
+}
+
+.single-column {
+  padding: 24px;
+}
+
+.card {
+  padding: 20px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+input,
+button {
+  font-size: 14px;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+}
+
+button {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #0f172a;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.94;
+}
+
+.error-box {
+  margin-top: 12px;
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 10px;
+  border-radius: 10px;
+  min-height: 18px;
+}
+
+.demo-box {
+  margin-top: 20px;
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.post {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.comment {
+  background: white;
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 8px;
+}
+
+.status-ok {
+  color: #166534;
+  margin-top: 12px;
+}
+
+.status-info {
+  color: #334155;
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
