@@ -1,33 +1,47 @@
 const express = require("express");
-const { users } = require("../data/store");
+
+const { get } = require("../data/db");
 const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
-router.get("/profile", requireAuth, (req, res) => {
-  const id = Number(req.query.id);
+router.get("/api/profile/:id", requireAuth, (req, res) => {
+  const requestedId = Number(req.params.id);
 
-  if (!id) {
-    return res.status(400).json({ error: "Missing profile id" });
+  if (!requestedId) {
+    return res.status(400).json({ error: "Identifiant de profil invalide" });
   }
 
-  if (req.user.id !== id && req.user.role !== "admin") {
-    return res.status(403).json({ error: "Access denied" });
+  if (
+    req.user.id !== requestedId &&
+    req.user.role !== "manager" &&
+    req.user.role !== "admin"
+  ) {
+    return res.status(403).json({ error: "Acces refuse" });
   }
 
-  const user = users.find((u) => u.id === id);
+  const profile = get(
+    `
+      SELECT
+        id,
+        username,
+        email,
+        display_name AS displayName,
+        role,
+        department,
+        mailbox,
+        bio
+      FROM users
+      WHERE id = $id
+    `,
+    { $id: requestedId }
+  );
 
-  if (!user) {
-    return res.status(404).json({ error: "Profile not found" });
+  if (!profile) {
+    return res.status(404).json({ error: "Profil introuvable" });
   }
 
-  return res.json({
-    id: user.id,
-    displayName: user.displayName,
-    role: user.role,
-    department: user.department,
-    email: user.email,
-  });
+  return res.json(profile);
 });
 
 module.exports = router;

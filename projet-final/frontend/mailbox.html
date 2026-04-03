@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CorpHack Mailbox Preview</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="mailbox">
+  <main class="page-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <h1>Mailbox preview</h1>
+        <p>Boite mail simulee pour les notifications de reset.</p>
+      </div>
+      <div class="inline-row">
+        <a class="pill" href="index.html">Retour login</a>
+      </div>
+    </header>
+
+    <section class="single-column">
+      <article class="card">
+        <h2>Charger une mailbox</h2>
+        <div data-api-status class="status-box info">Verification de l'API...</div>
+        <form id="mailboxForm" class="stack">
+          <label for="mailboxName">Mailbox</label>
+          <input id="mailboxName" type="text" placeholder="alice" />
+          <button type="submit">Afficher</button>
+        </form>
+        <div id="mailboxStatus" class="status-box info"></div>
+      </article>
+
+      <article class="card">
+        <h2>Messages</h2>
+        <div id="mailboxResult"></div>
+      </article>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

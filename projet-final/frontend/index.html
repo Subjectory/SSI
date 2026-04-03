@@ -3,35 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CorpHack Intranet - Login</title>
+  <title>CorpHack Intranet</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
-  <main class="auth-page">
-    <section class="auth-card">
-      <h1>CorpHack Intranet</h1>
-      <p class="subtitle">Portail employé interne</p>
-
-      <form id="loginForm" class="stack">
-        <label for="username">Nom d’utilisateur</label>
-        <input id="username" type="text" placeholder="alice" required />
-
-        <label for="password">Mot de passe</label>
-        <input id="password" type="password" placeholder="********" required />
-
-        <button type="submit">Se connecter</button>
-      </form>
-
-      <div id="error" class="error-box"></div>
-
-      <div class="demo-box">
-        <p><strong>Comptes de démo</strong></p>
-        <p>Employé : <code>alice</code> / <code>Password123!</code></p>
-        <p>Admin : <code>admin</code> / <code>Admin123!</code></p>
+<body data-page="login">
+  <main class="landing-shell">
+    <section class="landing-hero">
+      <span class="eyebrow">CorpHack Intranet CTF</span>
+      <h1>Portail interne corporate, formations sensibles et terrain de jeu SSI.</h1>
+      <p class="muted">
+        Cette plateforme regroupe authentification, annonces, documents, formations et outils internes.
+        Le rendu est volontairement credible pour servir de support au challenge Blue Team / Red Team.
+      </p>
+      <div class="card">
+        <h2>Comptes seed</h2>
+        <div class="info-grid">
+          <p><strong>Employee</strong><span><code>alice</code> / <code>Welcome2026!</code></span></p>
+          <p><strong>Manager</strong><span><code>clara.manager</code> / <code>Manager2026!</code></span></p>
+          <p><strong>Admin</strong><span><code>admin</code> / <code>Admin2026!</code></span></p>
+        </div>
       </div>
+    </section>
+
+    <section class="landing-panel">
+      <section class="card">
+        <h2>Connexion</h2>
+        <div data-api-status class="status-box info">Verification de l'API...</div>
+        <form id="loginForm" class="stack">
+          <label for="username">Username</label>
+          <input id="username" type="text" placeholder="alice" required />
+
+          <label for="password">Mot de passe</label>
+          <input id="password" type="password" placeholder="********" required />
+
+          <button type="submit">Se connecter</button>
+        </form>
+        <div id="loginStatus" class="status-box info"></div>
+      </section>
+
+      <section class="card">
+        <h2>Mot de passe oublie</h2>
+        <form id="forgotForm" class="stack">
+          <label for="forgotEmail">Email employee</label>
+          <input id="forgotEmail" type="email" placeholder="alice@corphack.local" required />
+          <button type="submit">Generer un reset</button>
+        </form>
+        <div id="forgotStatus" class="status-box info"></div>
+      </section>
+
+      <section class="card">
+        <h2>Mailbox preview</h2>
+        <form id="mailboxForm" class="stack">
+          <label for="mailboxName">Nom de mailbox simulee</label>
+          <input id="mailboxName" type="text" placeholder="alice" />
+          <button type="submit" class="secondary-button">Consulter la mailbox</button>
+        </form>
+        <div id="mailboxStatus" class="status-box info"></div>
+        <div id="mailboxResult"></div>
+      </section>
     </section>
   </main>
 
-  <script src="js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

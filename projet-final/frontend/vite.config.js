@@ -1,7 +1,23 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 
-// https://vite.dev/config/
+const rootDir = dirname(fileURLToPath(import.meta.url));
+
 export default defineConfig({
-  plugins: [react()],
-})
+  build: {
+    rollupOptions: {
+      input: {
+        index: resolve(rootDir, "index.html"),
+        dashboard: resolve(rootDir, "dashboard.html"),
+        profile: resolve(rootDir, "profile.html"),
+        blog: resolve(rootDir, "blog.html"),
+        upload: resolve(rootDir, "upload.html"),
+        trainings: resolve(rootDir, "trainings.html"),
+        admin: resolve(rootDir, "admin.html"),
+        reset: resolve(rootDir, "reset.html"),
+        mailbox: resolve(rootDir, "mailbox.html"),
+      },
+    },
+  },
+});
