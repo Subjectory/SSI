@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Horizon · Annonces</title>
+  <title>Horizon · Documents</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body data-page="blog">
+<body data-page="documents">
   <div class="app-shell">
     <aside class="sidebar">
       <a href="dashboard.html" class="brand-lockup">
         <span class="brand-pill">CorpHack</span>
         <strong>Horizon</strong>
-        <small>Communication interne, documentation et parcours collaborateurs dans un même espace.</small>
+        <small>Une bibliothèque claire pour vos contenus métier, procédures et kits de ressources.</small>
       </a>
       <section class="sidebar-user">
         <strong data-user-name>Collaborateur</strong>
@@ -39,9 +39,9 @@
     <main class="workspace">
       <header class="workspace-header">
         <div>
-          <span class="section-kicker">Communication</span>
-          <h1>Annonces internes</h1>
-          <p>Suivez les informations essentielles et laissez un commentaire contextuel sur les publications internes.</p>
+          <span class="section-kicker">Documentation</span>
+          <h1>Bibliothèque documentaire</h1>
+          <p>Centralisez les ressources internes, publiez de nouveaux documents et importez des kits de contenus pour vos équipes.</p>
         </div>
         <div class="workspace-toolbar">
           <div data-api-status class="status-box error" hidden></div>
@@ -52,30 +52,52 @@
         <article class="surface-card">
           <div class="surface-card-header">
             <div>
-              <span class="section-kicker">Flux</span>
-              <h2>Dernières publications</h2>
+              <span class="section-kicker">Bibliothèque</span>
+              <h2>Documents partagés</h2>
             </div>
           </div>
-          <div id="blogResult" class="list-stack"></div>
+          <div id="documentsList" class="list-stack"></div>
         </article>
 
         <aside class="aside-stack">
           <article class="surface-card">
-            <span class="section-kicker">Contribution</span>
-            <h3>Ajouter un commentaire</h3>
-            <p class="helper-text">Contribuez aux échanges internes en ciblant la publication concernée.</p>
-            <form id="commentForm" class="stack">
-              <label for="postId">Référence de la publication</label>
-              <input id="postId" type="number" value="1" min="1" />
+            <span class="section-kicker">Ajout</span>
+            <h3>Publier un document</h3>
+            <form id="uploadForm" class="stack">
+              <label for="documentTitle">Titre du document</label>
+              <input id="documentTitle" type="text" placeholder="Politique de déplacement" />
 
-              <label for="commentBody">Commentaire</label>
-              <textarea id="commentBody" placeholder="<p>Merci pour la mise à jour.</p>"></textarea>
+              <label for="documentFile">Fichier</label>
+              <input id="documentFile" type="file" />
 
-              <button type="submit">Publier le commentaire</button>
+              <button type="submit">Ajouter à la bibliothèque</button>
             </form>
-            <div id="commentStatus" class="status-box info" hidden></div>
+            <div id="documentsStatus" class="status-box info" hidden></div>
+          </article>
+
+          <article class="surface-card">
+            <span class="section-kicker">Import</span>
+            <h3>Importer un kit de ressources</h3>
+            <p class="helper-text">Utilisez cette zone pour charger un lot d’assets ou un package documentaire.</p>
+            <form id="importForm" class="stack">
+              <label for="archiveFile">Archive ZIP</label>
+              <input id="archiveFile" type="file" accept=".zip" />
+              <button type="submit" class="secondary-button">Importer le kit</button>
+            </form>
+            <div id="importStatus" class="status-box info" hidden></div>
+            <div id="importResult"></div>
           </article>
         </aside>
+      </section>
+
+      <section class="surface-card">
+        <div class="surface-card-header">
+          <div>
+            <span class="section-kicker">Aperçu</span>
+            <h2>Lecture du document</h2>
+          </div>
+        </div>
+        <div id="documentPreview"></div>
       </section>
     </main>
   </div>

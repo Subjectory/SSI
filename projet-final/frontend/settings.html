@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Horizon · Parametres</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="settings">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="brand-lockup">
+        <span class="brand-pill">CorpHack</span>
+        <strong>Horizon</strong>
+        <small>Personnalisation de l'experience, densite d'affichage et options avancees du workspace.</small>
+      </a>
+
+      <section class="sidebar-user">
+        <strong data-user-name>Collaborateur</strong>
+        <span data-user-role>Session active</span>
+        <small data-user-email>user@corphack.local</small>
+      </section>
+
+      <section class="sidebar-group">
+        <p class="sidebar-label">Workspace</p>
+        <a class="sidebar-link" data-nav-target="dashboard" href="dashboard.html">Accueil</a>
+        <a class="sidebar-link" data-nav-target="trainings" href="trainings.html">Formations</a>
+        <a class="sidebar-link" data-nav-target="documents" href="documents.html">Documents</a>
+        <a class="sidebar-link" data-nav-target="blog" href="blog.html">Annonces</a>
+      </section>
+
+      <section class="sidebar-group">
+        <p class="sidebar-label">Compte</p>
+        <a class="sidebar-link" data-nav-target="profile" href="profile.html">Profil</a>
+        <a class="sidebar-link" data-nav-target="settings" href="settings.html">Parametres</a>
+        <a class="sidebar-link" data-admin-only data-nav-target="admin" href="admin.html" hidden>Admin</a>
+      </section>
+
+      <div class="sidebar-spacer"></div>
+      <button class="secondary-button" onclick="logout()">Deconnexion</button>
+    </aside>
+
+    <main class="workspace">
+      <header class="workspace-header">
+        <div>
+          <span class="section-kicker">Experience produit</span>
+          <h1>Parametres</h1>
+          <p>Adaptez Horizon a vos usages quotidiens, puis ouvrez les options avancees uniquement si vous devez aller plus loin.</p>
+        </div>
+        <div class="workspace-toolbar">
+          <div data-api-status class="status-box error" hidden></div>
+        </div>
+      </header>
+
+      <section class="summary-grid">
+        <article class="surface-card">
+          <div class="surface-card-header">
+            <div>
+              <span class="section-kicker">Personnalisation</span>
+              <h2>Preferences principales</h2>
+            </div>
+          </div>
+
+          <form id="preferencesForm" class="stack">
+            <div class="field-row">
+              <div class="stack">
+                <label for="preferencesLocale">Locale</label>
+                <select id="preferencesLocale">
+                  <option value="fr-FR">Francais (France)</option>
+                  <option value="en-US">English (US)</option>
+                </select>
+              </div>
+
+              <div class="stack">
+                <label for="preferencesDensity">Densite</label>
+                <select id="preferencesDensity">
+                  <option value="comfortable">Confortable</option>
+                  <option value="compact">Compacte</option>
+                </select>
+              </div>
+            </div>
+
+            <label for="preferencesWidgets">Widgets d'accueil</label>
+            <input id="preferencesWidgets" type="text" placeholder="agenda, documents, annonces" />
+
+            <button type="submit">Enregistrer les preferences</button>
+          </form>
+
+          <div id="preferencesStatus" class="status-box info" hidden></div>
+        </article>
+
+        <article class="surface-card">
+          <div class="surface-card-header">
+            <div>
+              <span class="section-kicker">Apercu</span>
+              <h2>Configuration en cours</h2>
+            </div>
+          </div>
+          <div id="preferencesPreview"></div>
+        </article>
+      </section>
+
+      <details class="surface-card surface-disclosure">
+        <summary>Parametres avances</summary>
+        <div class="surface-disclosure-content stack">
+          <p class="helper-text">Utilisez cet espace si vous devez injecter ou rejouer une configuration plus complete que les reglages standards.</p>
+          <form id="preferencesAdvancedForm" class="stack">
+            <label for="preferencesJson">Configuration JSON</label>
+            <textarea id="preferencesJson" spellcheck="false"></textarea>
+            <button type="submit" class="secondary-button">Appliquer la configuration avancee</button>
+          </form>
+          <div id="preferencesAdvancedStatus" class="status-box info" hidden></div>
+        </div>
+      </details>
+    </main>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

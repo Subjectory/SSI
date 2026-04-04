@@ -3,86 +3,155 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CorpHack Formations</title>
+  <title>Horizon · Formations</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body data-page="trainings">
-  <main class="page-shell">
-    <header class="topbar">
-      <div class="brand-block">
-        <h1>Formations & certifications</h1>
-        <p>Catalogue interne, demandes d'acces, ressources et moteur de preview certificat.</p>
-      </div>
-      <div class="inline-row">
-        <span id="navUser" class="pill">Session</span>
-        <button onclick="logout()">Deconnexion</button>
-      </div>
-    </header>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="brand-lockup">
+        <span class="brand-pill">CorpHack</span>
+        <strong>Horizon</strong>
+        <small>Catalogue de formation, demandes d'acces et certifications dans un espace unique.</small>
+      </a>
 
-    <nav class="nav">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="profile.html">Profil</a>
-      <a href="blog.html">Annonces</a>
-      <a href="upload.html">Documents</a>
-      <a href="trainings.html">Formations</a>
-      <a href="admin.html">Admin</a>
-    </nav>
-    <div data-api-status class="status-box info">Verification de l'API...</div>
+      <section class="sidebar-user">
+        <strong data-user-name>Collaborateur</strong>
+        <span data-user-role>Session active</span>
+        <small data-user-email>user@corphack.local</small>
+      </section>
 
-    <section class="split-columns">
-      <article class="card">
-        <h2>Catalogue</h2>
-        <div id="trainingsList"></div>
-      </article>
+      <section class="sidebar-group">
+        <p class="sidebar-label">Workspace</p>
+        <a class="sidebar-link" data-nav-target="dashboard" href="dashboard.html">Accueil</a>
+        <a class="sidebar-link" data-nav-target="trainings" href="trainings.html">Formations</a>
+        <a class="sidebar-link" data-nav-target="documents" href="documents.html">Documents</a>
+        <a class="sidebar-link" data-nav-target="blog" href="blog.html">Annonces</a>
+      </section>
 
-      <article class="card">
-        <h2>Operations formations</h2>
-        <form id="requestLookupForm" class="stack">
-          <label for="requestId">Consulter une demande par ID</label>
-          <input id="requestId" type="number" min="1" />
-          <button type="submit" class="secondary-button">Voir la demande</button>
-        </form>
+      <section class="sidebar-group">
+        <p class="sidebar-label">Compte</p>
+        <a class="sidebar-link" data-nav-target="profile" href="profile.html">Profil</a>
+        <a class="sidebar-link" data-nav-target="settings" href="settings.html">Parametres</a>
+        <a class="sidebar-link" data-admin-only data-nav-target="admin" href="admin.html" hidden>Admin</a>
+      </section>
 
-        <form id="confirmForm" class="stack">
-          <label for="confirmTrainingId">Confirmer une formation</label>
-          <input id="confirmTrainingId" type="number" value="2" min="1" />
-          <label for="reviewCode">Review code</label>
-          <input id="reviewCode" type="text" placeholder="WARROOM-APR-2026" />
-          <button type="submit">Confirmer</button>
-        </form>
-        <div id="trainingStatus" class="status-box info"></div>
-        <div id="trainingActionsResult"></div>
-      </article>
-    </section>
+      <div class="sidebar-spacer"></div>
+      <button class="secondary-button" onclick="logout()">Deconnexion</button>
+    </aside>
 
-    <section class="split-columns">
-      <article class="card">
-        <h2>Preview certificat</h2>
-        <form id="certificateForm" class="stack">
-          <label for="certificateTrainingId">Training ID</label>
-          <input id="certificateTrainingId" type="number" value="2" min="1" />
+    <main class="workspace">
+      <header class="workspace-header">
+        <div>
+          <span class="section-kicker">Developpement des competences</span>
+          <h1>Formations et certifications</h1>
+          <p>Consultez le catalogue, suivez vos demandes d'acces et preparez les attestations associees aux parcours sensibles.</p>
+        </div>
+        <div class="workspace-toolbar">
+          <div data-api-status class="status-box error" hidden></div>
+        </div>
+      </header>
 
-          <label for="attendeeName">Nom du participant</label>
-          <input id="attendeeName" type="text" placeholder="Alice Martin" />
+      <section class="hero-banner">
+        <div class="tight-stack">
+          <h2>Un pilotage simple pour des parcours exigeants</h2>
+          <p id="trainingSummaryText">Retrouvez les parcours ouverts, identifiez les sessions a validation managériale et gardez un point d'entree unique pour les ressources de formation.</p>
+          <div class="hero-actions">
+            <a class="button-link" href="#trainingsList">Parcourir le catalogue</a>
+            <a class="button-link secondary-button" href="#certificateWorkspace">Ouvrir les certificats</a>
+          </div>
+        </div>
+        <div id="trainingSummary" class="metric-grid"></div>
+      </section>
 
-          <label for="badgeUrl">Badge URL</label>
-          <input id="badgeUrl" type="text" placeholder="http://127.0.0.1:3000/internal/certificates/signing-material" />
+      <section class="workspace-split">
+        <article class="surface-card">
+          <div class="surface-card-header">
+            <div>
+              <span class="section-kicker">Catalogue</span>
+              <h2>Parcours disponibles</h2>
+            </div>
+          </div>
+          <div id="trainingsList" class="list-stack"></div>
+          <div id="trainingStatus" class="status-box info" hidden></div>
+        </article>
 
-          <label for="customHtml">HTML additionnel</label>
-          <textarea id="customHtml" placeholder="<p>Session validee.</p>"></textarea>
+        <aside class="aside-stack">
+          <article class="surface-card">
+            <span class="section-kicker">Suivi</span>
+            <h3>Demande et validation</h3>
+            <p class="helper-text">Utilisez ces actions pour suivre une demande existante ou finaliser un acces deja valide.</p>
 
-          <button type="submit">Generer la preview</button>
-        </form>
-        <div id="certificateStatus" class="status-box info"></div>
-      </article>
+            <form id="requestLookupForm" class="stack">
+              <label for="requestId">Reference de demande</label>
+              <input id="requestId" type="number" min="1" placeholder="Ex. 12" />
+              <button type="submit" class="secondary-button">Consulter la demande</button>
+            </form>
 
-      <article class="card">
-        <h2>Resultats</h2>
-        <div id="certificateResult"></div>
-        <div id="trainingResourceResult"></div>
-      </article>
-    </section>
-  </main>
+            <form id="confirmForm" class="stack">
+              <label for="confirmTrainingId">Formation cible</label>
+              <input id="confirmTrainingId" type="number" value="2" min="1" />
+
+              <label for="reviewCode">Code de revue</label>
+              <input id="reviewCode" type="text" placeholder="Code de revue fourni par votre equipe" />
+
+              <button type="submit">Finaliser l'acces</button>
+            </form>
+          </article>
+
+          <article class="callout">
+            <strong>Acces restreints</strong>
+            <p class="helper-text">Les ressources sensibles apparaissent directement dans le catalogue une fois l'acces confirme.</p>
+          </article>
+        </aside>
+      </section>
+
+      <section id="certificateWorkspace" class="summary-grid">
+        <article class="surface-card">
+          <div class="surface-card-header">
+            <div>
+              <span class="section-kicker">Certificats</span>
+              <h2>Apercu de certificat</h2>
+            </div>
+          </div>
+
+          <form id="certificateForm" class="stack">
+            <div class="field-row">
+              <div class="stack">
+                <label for="certificateTrainingId">Formation</label>
+                <input id="certificateTrainingId" type="number" value="2" min="1" />
+              </div>
+              <div class="stack">
+                <label for="attendeeName">Nom du participant</label>
+                <input id="attendeeName" type="text" placeholder="Alice Martin" />
+              </div>
+            </div>
+
+            <label for="badgeUrl">Badge ou visuel externe</label>
+            <input id="badgeUrl" type="text" placeholder="https://assets.corphack.local/badges/compliance.svg" />
+
+            <label for="customHtml">Contenu additionnel</label>
+            <textarea id="customHtml" placeholder="<p>Session validee pour la vague de certification du trimestre.</p>"></textarea>
+
+            <button type="submit">Generer l'aperçu</button>
+          </form>
+          <div id="certificateStatus" class="status-box info" hidden></div>
+        </article>
+
+        <article class="surface-card">
+          <div class="surface-card-header">
+            <div>
+              <span class="section-kicker">Resultats</span>
+              <h2>Ressources et sortie</h2>
+            </div>
+          </div>
+          <div id="trainingActionsResult"></div>
+          <div id="trainingResourceResult"></div>
+          <div id="certificateResult"></div>
+        </article>
+      </section>
+    </main>
+  </div>
 
   <script type="module" src="js/app.js"></script>
 </body>

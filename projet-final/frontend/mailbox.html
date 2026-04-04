@@ -3,38 +3,53 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CorpHack Mailbox Preview</title>
+  <title>Horizon · Recuperation</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body data-page="mailbox">
-  <main class="page-shell">
-    <header class="topbar">
-      <div class="brand-block">
-        <h1>Mailbox preview</h1>
-        <p>Boite mail simulee pour les notifications de reset.</p>
+  <main class="marketing-shell">
+    <section class="marketing-main">
+      <div class="brand-kicker">
+        <strong>CorpHack</strong>
+        <span>Horizon</span>
       </div>
-      <div class="inline-row">
-        <a class="pill" href="index.html">Retour login</a>
-      </div>
-    </header>
 
-    <section class="single-column">
-      <article class="card">
-        <h2>Charger une mailbox</h2>
-        <div data-api-status class="status-box info">Verification de l'API...</div>
-        <form id="mailboxForm" class="stack">
-          <label for="mailboxName">Mailbox</label>
-          <input id="mailboxName" type="text" placeholder="alice" />
-          <button type="submit">Afficher</button>
-        </form>
-        <div id="mailboxStatus" class="status-box info"></div>
-      </article>
+      <section class="marketing-hero">
+        <span class="section-kicker">Recuperation de compte</span>
+        <h1>Centre de messages de service.</h1>
+        <p>Consultez les notifications techniques generees par le parcours de recuperation de compte, puis ouvrez le lien qui vous a ete transmis.</p>
+        <div class="marketing-actions">
+          <a href="index.html" class="button-link secondary-button">Retour a la connexion</a>
+          <a href="reset.html" class="button-link">Ouvrir la page de reset</a>
+        </div>
+      </section>
 
-      <article class="card">
-        <h2>Messages</h2>
-        <div id="mailboxResult"></div>
-      </article>
+      <section class="proof-card">
+        <span class="section-kicker">Usage</span>
+        <h3>Un seul point d'acces pour les messages de recuperation</h3>
+        <p>Chargez une boite de reception, verifiez le lien emis pour votre compte puis poursuivez la reinitialisation depuis la page dediee.</p>
+      </section>
     </section>
+
+    <aside class="auth-column">
+      <section class="auth-card">
+        <span class="section-kicker">Recherche</span>
+        <h2>Charger une boite</h2>
+        <div data-api-status class="status-box error" hidden></div>
+        <form id="mailboxForm" class="stack">
+          <label for="mailboxName">Boite de reception</label>
+          <input id="mailboxName" type="text" placeholder="prenom.nom" />
+          <button type="submit">Afficher les messages</button>
+        </form>
+        <div id="mailboxStatus" class="status-box info" hidden></div>
+      </section>
+
+      <section class="proof-card">
+        <span class="section-kicker">Messages</span>
+        <h3>Historique recent</h3>
+        <div id="mailboxResult"></div>
+      </section>
+    </aside>
   </main>
 
   <script type="module" src="js/app.js"></script>

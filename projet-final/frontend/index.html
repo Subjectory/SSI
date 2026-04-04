@@ -3,65 +3,107 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CorpHack Intranet</title>
+  <title>Horizon by CorpHack</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body data-page="login">
-  <main class="landing-shell">
-    <section class="landing-hero">
-      <span class="eyebrow">CorpHack Intranet CTF</span>
-      <h1>Portail interne corporate, formations sensibles et terrain de jeu SSI.</h1>
-      <p class="muted">
-        Cette plateforme regroupe authentification, annonces, documents, formations et outils internes.
-        Le rendu est volontairement credible pour servir de support au challenge Blue Team / Red Team.
-      </p>
-      <div class="card">
-        <h2>Comptes seed</h2>
-        <div class="info-grid">
-          <p><strong>Employee</strong><span><code>alice</code> / <code>Welcome2026!</code></span></p>
-          <p><strong>Manager</strong><span><code>clara.manager</code> / <code>Manager2026!</code></span></p>
-          <p><strong>Admin</strong><span><code>admin</code> / <code>Admin2026!</code></span></p>
-        </div>
+  <main class="marketing-shell">
+    <section class="marketing-main">
+      <div class="brand-kicker">
+        <strong>CorpHack</strong>
+        <span>Horizon</span>
       </div>
+
+      <section class="marketing-hero">
+        <span class="section-kicker">Workspace RH & formation</span>
+        <h1>Une expérience employé claire pour orchestrer documents, apprentissage et communication interne.</h1>
+        <p>
+          Horizon réunit les parcours de formation, la documentation métier et les annonces essentielles
+          dans un espace simple à déployer, intuitif à utiliser et cohérent pour les équipes RH, IT et compliance.
+        </p>
+        <div class="marketing-actions">
+          <a href="#auth-card" class="button-link">Accéder à Horizon</a>
+          <a href="#proof" class="button-link secondary-button">Découvrir le produit</a>
+        </div>
+      </section>
+
+      <section class="marketing-grid">
+        <article class="marketing-card">
+          <strong>Formation continue</strong>
+          <p>Diffusez vos parcours, suivez les demandes d’accès et centralisez les certificats dans un même espace.</p>
+        </article>
+        <article class="marketing-card">
+          <strong>Documentation fiable</strong>
+          <p>Retrouvez politiques internes, ressources opérationnelles et documents de référence sans friction.</p>
+        </article>
+        <article class="marketing-card">
+          <strong>Communication utile</strong>
+          <p>Donnez de la visibilité aux annonces prioritaires et gardez un point d’entrée unique pour les équipes.</p>
+        </article>
+      </section>
+
+      <section id="proof" class="three-column-grid">
+        <article class="proof-card">
+          <span class="section-kicker">Bénéfice</span>
+          <h3>Onboarding simplifié</h3>
+          <p>Les nouveaux collaborateurs retrouvent leurs documents, prochaines étapes et parcours d’apprentissage dès la première connexion.</p>
+        </article>
+        <article class="proof-card">
+          <span class="section-kicker">Usage quotidien</span>
+          <h3>Moins de friction interne</h3>
+          <p>Les équipes naviguent entre annonces, ressources et conformité depuis une interface sobre et cohérente.</p>
+        </article>
+        <article class="proof-card">
+          <span class="section-kicker">Confiance</span>
+          <h3>Un produit pensé pour l’interne</h3>
+          <p>Horizon s’intègre à vos usages métiers avec une expérience B2B lisible, stable et facile à adopter.</p>
+        </article>
+      </section>
     </section>
 
-    <section class="landing-panel">
-      <section class="card">
-        <h2>Connexion</h2>
-        <div data-api-status class="status-box info">Verification de l'API...</div>
+    <aside class="auth-column">
+      <section id="auth-card" class="auth-card">
+        <span class="section-kicker">Espace collaborateur</span>
+        <h2>Connexion sécurisée</h2>
+        <p class="muted">
+          Accédez à vos formations, documents et communications internes depuis votre espace Horizon.
+        </p>
+
+        <div data-api-status class="status-box error" hidden></div>
+
         <form id="loginForm" class="stack">
-          <label for="username">Username</label>
-          <input id="username" type="text" placeholder="alice" required />
+          <label for="username">Nom d’utilisateur</label>
+          <input id="username" type="text" placeholder="prenom.nom" required />
 
           <label for="password">Mot de passe</label>
-          <input id="password" type="password" placeholder="********" required />
+          <input id="password" type="password" placeholder="Votre mot de passe" required />
 
           <button type="submit">Se connecter</button>
         </form>
-        <div id="loginStatus" class="status-box info"></div>
+
+        <div id="loginStatus" class="status-box error" hidden></div>
+
+        <details id="forgotDetails" class="subtle-disclosure">
+          <summary>Mot de passe oublié ?</summary>
+          <form id="forgotForm" class="stack">
+            <label for="forgotEmail">Adresse e-mail professionnelle</label>
+            <input id="forgotEmail" type="email" placeholder="prenom.nom@corphack.local" required />
+            <button type="submit" class="secondary-button">Recevoir un lien de récupération</button>
+          </form>
+          <div id="forgotStatus" class="status-box info" hidden></div>
+          <div id="forgotResult"></div>
+        </details>
       </section>
 
-      <section class="card">
-        <h2>Mot de passe oublie</h2>
-        <form id="forgotForm" class="stack">
-          <label for="forgotEmail">Email employee</label>
-          <input id="forgotEmail" type="email" placeholder="alice@corphack.local" required />
-          <button type="submit">Generer un reset</button>
-        </form>
-        <div id="forgotStatus" class="status-box info"></div>
+      <section class="proof-card">
+        <span class="section-kicker">Pourquoi Horizon</span>
+        <ul class="simple-list">
+          <li>Un espace unique pour les formations, les annonces et la documentation.</li>
+          <li>Une interface pensée pour les collaborateurs, managers et équipes support.</li>
+          <li>Une hiérarchie claire pour retrouver l’information rapidement.</li>
+        </ul>
       </section>
-
-      <section class="card">
-        <h2>Mailbox preview</h2>
-        <form id="mailboxForm" class="stack">
-          <label for="mailboxName">Nom de mailbox simulee</label>
-          <input id="mailboxName" type="text" placeholder="alice" />
-          <button type="submit" class="secondary-button">Consulter la mailbox</button>
-        </form>
-        <div id="mailboxStatus" class="status-box info"></div>
-        <div id="mailboxResult"></div>
-      </section>
-    </section>
+    </aside>
   </main>
 
   <script type="module" src="js/app.js"></script>

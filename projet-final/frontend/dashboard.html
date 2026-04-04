@@ -3,55 +3,107 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CorpHack Dashboard</title>
+  <title>Horizon · Accueil</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body data-page="dashboard">
-  <main class="page-shell">
-    <header class="topbar">
-      <div class="brand-block">
-        <h1>CorpHack Dashboard</h1>
-        <p>Vue d'ensemble du portail interne et de vos preferences.</p>
-      </div>
-      <div class="inline-row">
-        <span id="navUser" class="pill">Session</span>
-        <button onclick="logout()">Deconnexion</button>
-      </div>
-    </header>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="brand-lockup">
+        <span class="brand-pill">CorpHack</span>
+        <strong>Horizon</strong>
+        <small>Le workspace employé pour la formation, les communications et la documentation interne.</small>
+      </a>
 
-    <nav class="nav">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="profile.html">Profil</a>
-      <a href="blog.html">Annonces</a>
-      <a href="upload.html">Documents</a>
-      <a href="trainings.html">Formations</a>
-      <a href="admin.html">Admin</a>
-    </nav>
-    <div data-api-status class="status-box info">Verification de l'API...</div>
+      <section class="sidebar-user">
+        <strong data-user-name>Collaborateur</strong>
+        <span data-user-role>Session active</span>
+        <small data-user-email>user@corphack.local</small>
+      </section>
 
-    <section class="layout-grid">
-      <article class="card">
-        <h2>Compte connecte</h2>
-        <div id="dashboardUser"></div>
-      </article>
+      <section class="sidebar-group">
+        <p class="sidebar-label">Workspace</p>
+        <a class="sidebar-link" data-nav-target="dashboard" href="dashboard.html">Accueil</a>
+        <a class="sidebar-link" data-nav-target="trainings" href="trainings.html">Formations</a>
+        <a class="sidebar-link" data-nav-target="documents" href="documents.html">Documents</a>
+        <a class="sidebar-link" data-nav-target="blog" href="blog.html">Annonces</a>
+      </section>
 
-      <article class="card">
-        <h2>Preferences JSON</h2>
-        <form id="preferencesForm" class="stack">
-          <textarea id="preferencesJson"></textarea>
-          <button type="submit">Mettre a jour</button>
-        </form>
-        <div id="preferencesStatus" class="status-box info"></div>
-      </article>
-    </section>
+      <section class="sidebar-group">
+        <p class="sidebar-label">Compte</p>
+        <a class="sidebar-link" data-nav-target="profile" href="profile.html">Profil</a>
+        <a class="sidebar-link" data-nav-target="settings" href="settings.html">Paramètres</a>
+        <a class="sidebar-link" data-admin-only data-nav-target="admin" href="admin.html" hidden>Admin</a>
+      </section>
 
-    <section class="single-column">
-      <article class="card">
-        <h2>Preview preferences</h2>
-        <div id="preferencesPreview"></div>
-      </article>
-    </section>
-  </main>
+      <div class="sidebar-spacer"></div>
+
+      <section>
+        <p class="sidebar-note">Unifiez vos priorités du jour sans changer d’outil ni multiplier les entrées internes.</p>
+        <button class="secondary-button" onclick="logout()">Déconnexion</button>
+      </section>
+    </aside>
+
+    <main class="workspace">
+      <header class="workspace-header">
+        <div>
+          <span class="section-kicker">Accueil</span>
+          <h1 id="dashboardGreeting">Bienvenue dans Horizon</h1>
+          <p>Retrouvez vos priorités, vos contenus récents et les actions utiles du moment dans un espace unique.</p>
+        </div>
+        <div class="workspace-toolbar">
+          <div data-api-status class="status-box error" hidden></div>
+        </div>
+      </header>
+
+      <section class="hero-banner">
+        <div class="tight-stack">
+          <h2>Votre journée commence ici</h2>
+          <p id="dashboardSummaryText">Suivez l’avancement de vos parcours, ouvrez rapidement un document métier et gardez les annonces importantes à portée de main.</p>
+          <div class="hero-actions">
+            <a class="button-link" href="trainings.html">Voir les formations</a>
+            <a class="button-link secondary-button" href="documents.html">Ouvrir la bibliothèque</a>
+          </div>
+        </div>
+        <div id="dashboardSummary" class="metric-grid"></div>
+      </section>
+
+      <section class="summary-grid">
+        <article class="surface-card">
+          <div class="surface-card-header">
+            <div>
+              <span class="section-kicker">Formations</span>
+              <h2>À suivre</h2>
+            </div>
+            <a class="link-inline" href="trainings.html">Voir tout</a>
+          </div>
+          <div id="dashboardTrainings" class="list-stack"></div>
+        </article>
+
+        <article class="surface-card">
+          <div class="surface-card-header">
+            <div>
+              <span class="section-kicker">Documents</span>
+              <h2>Bibliothèque récente</h2>
+            </div>
+            <a class="link-inline" href="documents.html">Ouvrir la bibliothèque</a>
+          </div>
+          <div id="dashboardDocuments" class="list-stack"></div>
+        </article>
+      </section>
+
+      <section class="surface-card">
+        <div class="surface-card-header">
+          <div>
+            <span class="section-kicker">Annonces</span>
+            <h2>Informations à la une</h2>
+          </div>
+          <a class="link-inline" href="blog.html">Voir toutes les annonces</a>
+        </div>
+        <div id="dashboardAnnouncements" class="list-stack"></div>
+      </section>
+    </main>
+  </div>
 
   <script type="module" src="js/app.js"></script>
 </body>

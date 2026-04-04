@@ -1,13 +1,13 @@
 const API_CONFIG_KEY = "corphack_api_url";
 
 function buildApiCandidates() {
-  const queryApi = new URLSearchParams(window.location.search).get("api");
+  const searchParams = new URLSearchParams(window.location.search);
+  const queryApi = searchParams.get("api");
   const savedApi = localStorage.getItem(API_CONFIG_KEY);
   const candidates = [queryApi, savedApi];
 
-  if (window.location.protocol === "file:") {
-    candidates.push("http://localhost:3000", "http://127.0.0.1:3000");
-  } else if (
+  if (
+    window.location.protocol === "file:" ||
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1"
   ) {
@@ -29,7 +29,15 @@ function getToken() {
 
 function getUser() {
   const raw = localStorage.getItem("user");
-  return raw ? JSON.parse(raw) : null;
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    return null;
+  }
 }
 
 function setSession(token, user) {
@@ -51,37 +59,133 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function formatDate(value) {
+  if (!value) {
+    return "Non renseigne";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return String(value);
+  }
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(parsed);
+}
+
+function formatRole(role) {
+  const labels = {
+    employee: "Collaborateur",
+    manager: "Manager",
+    admin: "Administrateur",
+  };
+
+  return labels[role] || role || "Utilisateur";
+}
+
+function firstName(value) {
+  return String(value || "").trim().split(/\s+/)[0] || "Bonjour";
+}
+
 function renderJson(value) {
   return `<pre class="json-box">${escapeHtml(JSON.stringify(value, null, 2))}</pre>`;
 }
 
-function setStatus(elementId, message, type = "info") {
-  const node = document.getElementById(elementId);
-  if (!node) return;
-  node.className = `status-box ${type}`;
-  node.textContent = message;
+function renderEmptyState(message) {
+  return `<div class="empty-state">${escapeHtml(message)}</div>`;
 }
 
-function setOutput(elementId, html) {
-  const node = document.getElementById(elementId);
-  if (!node) return;
-  node.innerHTML = html;
+function renderFlagStrip(flags) {
+  const items = Array.isArray(flags) ? flags.filter(Boolean) : [flags].filter(Boolean);
+  if (!items.length) {
+    return "";
+  }
+
+  return `
+    <div class="flag-strip">
+      ${items.map((flag) => `<code>${escapeHtml(flag)}</code>`).join("")}
+    </div>
+  `;
 }
 
-function renderApiStatus(message, type = "info") {
+function renderMetricCard(value, label, hint = "") {
+  return `
+    <article class="metric-card">
+      <strong>${escapeHtml(value)}</strong>
+      <span>${escapeHtml(label)}</span>
+      ${hint ? `<p class="helper-text">${escapeHtml(hint)}</p>` : ""}
+    </article>
+  `;
+}
+
+function renderKeyValueGrid(items) {
+  return `
+    <div class="key-value-grid">
+      ${items
+        .map(
+          (item) => `
+            <article class="key-value-item">
+              <span>${escapeHtml(item.label)}</span>
+              <strong>${escapeHtml(item.value)}</strong>
+            </article>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderApiStatus(message = "", type = "info") {
   const nodes = document.querySelectorAll("[data-api-status]");
   nodes.forEach((node) => {
+    if (!message) {
+      node.hidden = true;
+      node.textContent = "";
+      node.className = "status-box error";
+      return;
+    }
+
+    node.hidden = false;
     node.className = `status-box ${type}`;
     node.textContent = message;
   });
 }
 
-function buildNetworkErrorMessage(apiUrl) {
-  if (window.location.protocol === "https:" && String(apiUrl).startsWith("http://")) {
-    return `Le navigateur bloque probablement un appel HTTP depuis une page HTTPS. Ouvre le frontend en http://localhost:5173 ou expose aussi le backend en HTTPS. API cible: ${apiUrl}`;
+function setStatus(elementId, message = "", type = "info") {
+  const node = document.getElementById(elementId);
+  if (!node) {
+    return;
   }
 
-  return `Backend introuvable sur ${apiUrl}. Lance \`npm start\` dans /backend puis recharge la page.`;
+  if (!message) {
+    node.hidden = true;
+    node.textContent = "";
+    node.className = "status-box info";
+    return;
+  }
+
+  node.hidden = false;
+  node.className = `status-box ${type}`;
+  node.textContent = message;
+}
+
+function setOutput(elementId, html = "") {
+  const node = document.getElementById(elementId);
+  if (!node) {
+    return;
+  }
+
+  node.innerHTML = html;
+}
+
+function buildNetworkErrorMessage(apiUrl) {
+  if (window.location.protocol === "https:" && String(apiUrl).startsWith("http://")) {
+    return `Le navigateur bloque probablement un appel HTTP depuis une page HTTPS. Ouvrez le frontend sur http://localhost:5173 ou exposez aussi le backend en HTTPS. API cible: ${apiUrl}`;
+  }
+
+  return `Backend introuvable sur ${apiUrl}. Lancez npm start dans /backend puis rechargez la page.`;
 }
 
 async function probeApi(url) {
@@ -114,7 +218,7 @@ async function ensureApiBase() {
         await probeApi(candidate);
         activeApiUrl = candidate;
         localStorage.setItem(API_CONFIG_KEY, candidate);
-        renderApiStatus(`API connectee: ${candidate}`, "success");
+        renderApiStatus();
         return candidate;
       } catch (error) {
         lastError = error;
@@ -130,6 +234,7 @@ async function ensureApiBase() {
 
 async function apiFetch(endpoint, options = {}) {
   await ensureApiBase();
+
   const headers = new Headers(options.headers || {});
   const shouldAttachAuth = options.auth !== false;
 
@@ -189,6 +294,7 @@ async function requireAuth() {
     window.location.href = "index.html";
     throw new Error("Authentification requise");
   }
+
   return user;
 }
 
@@ -199,9 +305,38 @@ function logout() {
 
 window.logout = logout;
 
+function applyWorkspaceChrome(user, page) {
+  document.querySelectorAll("[data-user-name]").forEach((node) => {
+    node.textContent = user.displayName || user.username;
+  });
+
+  document.querySelectorAll("[data-user-role]").forEach((node) => {
+    node.textContent = `${formatRole(user.role)} · ${user.department || "Equipe"}`;
+  });
+
+  document.querySelectorAll("[data-user-email]").forEach((node) => {
+    node.textContent = user.email || "user@corphack.local";
+  });
+
+  document.querySelectorAll("[data-nav-target]").forEach((link) => {
+    link.classList.toggle("active", link.dataset.navTarget === page);
+  });
+
+  document.querySelectorAll("[data-admin-only]").forEach((node) => {
+    node.hidden = user.role !== "admin";
+  });
+}
+
+function sanitizeWidgetList(rawValue) {
+  return String(rawValue || "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 async function handleLogin(event) {
   event.preventDefault();
-  setStatus("loginStatus", "");
+  setStatus("loginStatus");
 
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value.trim();
@@ -222,7 +357,8 @@ async function handleLogin(event) {
 
 async function handleForgotPassword(event) {
   event.preventDefault();
-  setStatus("forgotStatus", "");
+  setStatus("forgotStatus");
+  setOutput("forgotResult");
 
   const email = document.getElementById("forgotEmail").value.trim();
 
@@ -231,86 +367,39 @@ async function handleForgotPassword(event) {
     const body = new URLSearchParams();
     body.append("email", email);
 
-    const data = await fetch(`${activeApiUrl}/api/auth/forgot-password`, {
+    const response = await fetch(`${activeApiUrl}/api/auth/forgot-password`, {
       method: "POST",
       body,
-    }).then(async (response) => {
-      const json = await response.json();
-      if (!response.ok) {
-        throw new Error(json.error || "Erreur reset");
-      }
-      return json;
     });
 
-    setStatus(
-      "forgotStatus",
-      `${data.message} Mailbox: ${data.mailbox}.`,
-      "success"
-    );
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Erreur de recuperation");
+    }
+
+    setStatus("forgotStatus", data.message, "success");
+
     if (data.mailbox) {
-      document.getElementById("mailboxName").value = data.mailbox;
+      setOutput(
+        "forgotResult",
+        `
+          <p class="helper-text">
+            Le message de recuperation a ete prepare.
+            <a class="link-inline" href="mailbox.html?mailbox=${encodeURIComponent(
+              data.mailbox
+            )}">Ouvrir le centre de messages</a>
+          </p>
+        `
+      );
     }
   } catch (error) {
     setStatus("forgotStatus", error.message, "error");
   }
 }
 
-async function loadMailbox(mailbox) {
-  const mailboxName = mailbox || document.getElementById("mailboxName").value.trim();
-  if (!mailboxName) {
-    setStatus("mailboxStatus", "Mailbox requise", "error");
-    return;
-  }
-
-  try {
-    const data = await apiFetch(
-      `/api/mail-preview?mailbox=${encodeURIComponent(mailboxName)}`,
-      { auth: false }
-    );
-
-    const messagesHtml = data.messages.length
-      ? data.messages
-          .map(
-            (message) => `
-              <article class="mail-card">
-                <div class="mail-meta">
-                  <strong>${escapeHtml(message.subject)}</strong>
-                  <span>${escapeHtml(message.createdAt)}</span>
-                </div>
-                <div class="mail-body">${message.htmlBody}</div>
-                ${renderJson(message.metadata)}
-              </article>
-            `
-          )
-          .join("")
-      : "<p class='muted'>Aucun message dans cette mailbox.</p>";
-
-    setOutput(
-      "mailboxResult",
-      `
-        <div class="inline-row">
-          <span class="pill">Mailbox: ${escapeHtml(data.mailbox)}</span>
-          <span class="pill">Messages: ${data.count}</span>
-        </div>
-        ${
-          data.flags.length
-            ? `<div class="flag-strip">${data.flags
-                .map((flag) => `<code>${escapeHtml(flag)}</code>`)
-                .join("")}</div>`
-            : ""
-        }
-        <div class="stack">${messagesHtml}</div>
-      `
-    );
-    setStatus("mailboxStatus", "Mailbox chargee", "success");
-  } catch (error) {
-    setStatus("mailboxStatus", error.message, "error");
-  }
-}
-
 async function handleResetPassword(event) {
   event.preventDefault();
-  setStatus("resetStatus", "");
+  setStatus("resetStatus");
 
   const token = document.getElementById("resetToken").value.trim();
   const password = document.getElementById("resetPassword").value.trim();
@@ -329,187 +418,321 @@ async function handleResetPassword(event) {
   }
 }
 
-async function initDashboard() {
-  const user = await requireAuth();
-  setOutput(
-    "dashboardUser",
-    `
-      <div class="info-grid">
-        <p><strong>Nom</strong><span>${escapeHtml(user.displayName)}</span></p>
-        <p><strong>Username</strong><span>${escapeHtml(user.username)}</span></p>
-        <p><strong>Role</strong><span>${escapeHtml(user.role)}</span></p>
-        <p><strong>Departement</strong><span>${escapeHtml(user.department)}</span></p>
-        <p><strong>Email</strong><span>${escapeHtml(user.email)}</span></p>
-        <p><strong>Mailbox</strong><span>${escapeHtml(user.mailbox)}</span></p>
-      </div>
-    `
-  );
+async function loadMailbox(mailboxValue) {
+  const mailbox = mailboxValue || document.getElementById("mailboxName")?.value.trim();
+  if (!mailbox) {
+    setStatus("mailboxStatus", "Precisez une boite de reception.", "error");
+    return;
+  }
 
-  const prefs = await apiFetch("/api/preferences");
-  document.getElementById("preferencesJson").value = JSON.stringify(
-    prefs.preferences,
-    null,
-    2
-  );
-  setOutput(
-    "preferencesPreview",
-    `${renderJson(prefs.preferences)}${
-      prefs.flag ? `<div class="flag-strip"><code>${escapeHtml(prefs.flag)}</code></div>` : ""
-    }`
-  );
+  try {
+    const data = await apiFetch(
+      `/api/mail-preview?mailbox=${encodeURIComponent(mailbox)}`,
+      { auth: false }
+    );
 
-  const prefsForm = document.getElementById("preferencesForm");
-  prefsForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    setStatus("preferencesStatus", "");
+    const messagesHtml = data.messages.length
+      ? data.messages
+          .map(
+            (message) => `
+              <article class="mail-card">
+                <div class="mail-header">
+                  <div>
+                    <strong>${escapeHtml(message.subject)}</strong>
+                    <span>${escapeHtml(formatDate(message.createdAt))}</span>
+                  </div>
+                  <span class="meta-tag">${escapeHtml(data.mailbox)}</span>
+                </div>
+                <div class="mail-body">${message.htmlBody}</div>
+                <div class="meta-row">
+                  <span class="meta-tag">Message #${escapeHtml(message.id)}</span>
+                </div>
+                ${renderJson(message.metadata)}
+              </article>
+            `
+          )
+          .join("")
+      : renderEmptyState("Aucun message disponible pour cette boite.");
 
-    try {
-      const payload = JSON.parse(document.getElementById("preferencesJson").value);
-      const data = await apiFetch("/api/preferences", {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      });
-
-      setOutput(
-        "preferencesPreview",
-        `${renderJson(data.preferences)}${
-          data.flag ? `<div class="flag-strip"><code>${escapeHtml(data.flag)}</code></div>` : ""
-        }`
-      );
-      setStatus("preferencesStatus", "Preferences enregistrees", "success");
-    } catch (error) {
-      setStatus("preferencesStatus", error.message, "error");
-    }
-  });
+    setOutput(
+      "mailboxResult",
+      `
+        <div class="meta-row">
+          <span class="meta-tag">Boite ${escapeHtml(data.mailbox)}</span>
+          <span class="meta-tag">${escapeHtml(data.count)} message(s)</span>
+        </div>
+        ${renderFlagStrip(data.flags)}
+        <div class="mail-list">${messagesHtml}</div>
+      `
+    );
+    setStatus("mailboxStatus", "Messages charges.", "success");
+  } catch (error) {
+    setStatus("mailboxStatus", error.message, "error");
+  }
 }
 
-async function initProfilePage() {
-  const user = await requireAuth();
-  const profileIdInput = document.getElementById("profileId");
-  profileIdInput.value = new URLSearchParams(window.location.search).get("id") || user.id;
+function renderDashboardTrainings(trainings) {
+  if (!trainings.length) {
+    return renderEmptyState("Aucune formation a afficher pour le moment.");
+  }
 
-  const loadProfile = async () => {
-    setStatus("profileStatus", "");
+  return trainings
+    .slice(0, 3)
+    .map((training) => {
+      const status = training.registrationId
+        ? training.accessGranted
+          ? "Acces actif"
+          : training.status || "pending"
+        : "Aucune demande";
+
+      return `
+        <article class="list-card">
+          <div class="list-card-header">
+            <div>
+              <h3>${escapeHtml(training.title)}</h3>
+              <p>${escapeHtml(training.description)}</p>
+            </div>
+            <span class="section-kicker">${training.approvalRequired ? "Validation" : "Ouvert"}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-tag">${escapeHtml(status)}</span>
+            <span class="meta-tag">${escapeHtml(training.seats)} place(s)</span>
+            <span class="meta-tag">${escapeHtml(training.restrictedRole || "Tous profils")}</span>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderDashboardDocuments(documents) {
+  if (!documents.length) {
+    return renderEmptyState("La bibliotheque est vide.");
+  }
+
+  return documents
+    .slice(0, 4)
+    .map(
+      (document) => `
+        <article class="list-card">
+          <div class="list-card-header">
+            <div>
+              <h3>${escapeHtml(document.title)}</h3>
+              <p>${escapeHtml(document.ownerDisplayName)} · ${escapeHtml(document.kind)}</p>
+            </div>
+            <span class="meta-tag">${escapeHtml(formatDate(document.createdAt))}</span>
+          </div>
+        </article>
+      `
+    )
+    .join("");
+}
+
+function renderDashboardPosts(posts) {
+  if (!posts.length) {
+    return renderEmptyState("Aucune annonce recente.");
+  }
+
+  return posts
+    .slice(0, 3)
+    .map(
+      (post) => `
+        <article class="list-card">
+          <div class="list-card-header">
+            <div>
+              <h3>${escapeHtml(post.title)}</h3>
+              <p>${escapeHtml(post.author)}</p>
+            </div>
+            <span class="meta-tag">${escapeHtml(post.comments.length)} commentaire(s)</span>
+          </div>
+          <div class="rich-content">${post.contentHtml}</div>
+        </article>
+      `
+    )
+    .join("");
+}
+
+async function initDashboardPage(user) {
+  const [trainings, documents, posts] = await Promise.all([
+    apiFetch("/api/trainings"),
+    apiFetch("/api/documents"),
+    apiFetch("/api/blog"),
+  ]);
+
+  const activeAccess = trainings.filter((training) => training.accessGranted || training.resources.length).length;
+  const pending = trainings.filter(
+    (training) => training.registrationId && !training.accessGranted
+  ).length;
+
+  document.getElementById("dashboardGreeting").textContent = `Bonjour ${firstName(
+    user.displayName
+  )}, bienvenue dans Horizon`;
+  document.getElementById("dashboardSummaryText").textContent =
+    pending > 0
+      ? `Vous avez ${pending} demande(s) de formation en cours de traitement et ${activeAccess} acces deja actifs.`
+      : "Vos formations, vos documents et vos annonces prioritaires sont rassembles ici.";
+
+  setOutput(
+    "dashboardSummary",
+    [
+      renderMetricCard(trainings.length, "Parcours disponibles"),
+      renderMetricCard(activeAccess, "Acces actifs"),
+      renderMetricCard(documents.length, "Documents disponibles"),
+    ].join("")
+  );
+  setOutput("dashboardTrainings", renderDashboardTrainings(trainings));
+  setOutput("dashboardDocuments", renderDashboardDocuments(documents));
+  setOutput("dashboardAnnouncements", renderDashboardPosts(posts));
+}
+
+async function initProfilePage(user) {
+  const input = document.getElementById("profileId");
+  const requestedId = new URLSearchParams(window.location.search).get("id");
+  input.value = requestedId || user.id;
+
+  async function loadProfile() {
+    setStatus("profileStatus");
+
     try {
-      const data = await apiFetch(`/api/profile/${profileIdInput.value.trim()}`);
+      const data = await apiFetch(`/api/profile/${input.value.trim()}`);
       setOutput(
         "profileResult",
         `
-          <div class="info-grid">
-            <p><strong>Nom</strong><span>${escapeHtml(data.displayName)}</span></p>
-            <p><strong>Username</strong><span>${escapeHtml(data.username)}</span></p>
-            <p><strong>Email</strong><span>${escapeHtml(data.email)}</span></p>
-            <p><strong>Role</strong><span>${escapeHtml(data.role)}</span></p>
-            <p><strong>Departement</strong><span>${escapeHtml(data.department)}</span></p>
-            <p><strong>Mailbox</strong><span>${escapeHtml(data.mailbox)}</span></p>
+          ${renderKeyValueGrid([
+            { label: "Nom", value: data.displayName },
+            { label: "Nom d'utilisateur", value: data.username },
+            { label: "Role", value: formatRole(data.role) },
+            { label: "Departement", value: data.department },
+            { label: "Email", value: data.email },
+            { label: "Boite", value: data.mailbox },
+          ])}
+          <div class="callout">
+            <strong>Bio</strong>
+            <p class="helper-text">${escapeHtml(data.bio)}</p>
           </div>
-          <p class="muted">${escapeHtml(data.bio)}</p>
         `
       );
     } catch (error) {
       setStatus("profileStatus", error.message, "error");
     }
-  };
+  }
 
   document.getElementById("profileLookupForm").addEventListener("submit", (event) => {
     event.preventDefault();
     loadProfile();
   });
 
-  loadProfile();
+  await loadProfile();
 }
 
-async function renderBlogPosts() {
-  const posts = await apiFetch("/api/blog");
-  const html = posts
+function renderBlogPosts(posts) {
+  if (!posts.length) {
+    return renderEmptyState("Aucune annonce n'a encore ete publiee.");
+  }
+
+  return posts
     .map(
       (post) => `
-        <article class="post">
-          <div class="post-meta">
-            <strong>${escapeHtml(post.title)}</strong>
-            <span>${escapeHtml(post.author)}</span>
+        <article class="list-card">
+          <div class="list-card-header">
+            <div>
+              <h3>${escapeHtml(post.title)}</h3>
+              <p>${escapeHtml(post.author)} · ${escapeHtml(formatDate(post.publishedAt))}</p>
+            </div>
+            <span class="meta-tag">${escapeHtml(post.comments.length)} commentaire(s)</span>
           </div>
           <div class="rich-content">${post.contentHtml}</div>
           <div class="comment-list">
-            ${post.comments
-              .map(
-                (comment) => `
-                  <div class="comment">
-                    <div class="comment-meta">
-                      <strong>${escapeHtml(comment.authorUsername)}</strong>
-                      <span>${escapeHtml(comment.createdAt)}</span>
-                    </div>
-                    <div class="rich-content">${comment.bodyHtml}</div>
-                  </div>
-                `
-              )
-              .join("")}
+            ${
+              post.comments.length
+                ? post.comments
+                    .map(
+                      (comment) => `
+                        <article class="comment-card">
+                          <strong>${escapeHtml(comment.authorUsername)}</strong>
+                          <time>${escapeHtml(formatDate(comment.createdAt))}</time>
+                          <div class="rich-content">${comment.bodyHtml}</div>
+                        </article>
+                      `
+                    )
+                    .join("")
+                : renderEmptyState("Aucun commentaire sur cette publication.")
+            }
           </div>
         </article>
       `
     )
     .join("");
+}
 
-  setOutput("blogResult", html || "<p class='muted'>Aucun article.</p>");
+async function refreshBlogPosts() {
+  const posts = await apiFetch("/api/blog");
+  setOutput("blogResult", renderBlogPosts(posts));
 }
 
 async function initBlogPage() {
-  await requireAuth();
-  await renderBlogPosts();
+  await refreshBlogPosts();
 
   document.getElementById("commentForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    setStatus("commentStatus", "");
-
-    const postId = Number(document.getElementById("postId").value);
-    const bodyHtml = document.getElementById("commentBody").value;
+    setStatus("commentStatus");
 
     try {
       await apiFetch("/api/blog/comments", {
         method: "POST",
-        body: JSON.stringify({ postId, bodyHtml }),
+        body: JSON.stringify({
+          postId: Number(document.getElementById("postId").value),
+          bodyHtml: document.getElementById("commentBody").value,
+        }),
       });
+
       document.getElementById("commentBody").value = "";
-      setStatus("commentStatus", "Commentaire ajoute", "success");
-      await renderBlogPosts();
+      setStatus("commentStatus", "Commentaire publie.", "success");
+      await refreshBlogPosts();
     } catch (error) {
       setStatus("commentStatus", error.message, "error");
     }
   });
 }
 
-async function loadDocuments() {
-  const documents = await apiFetch("/api/documents");
-  const html = documents
-    .map(
-      (document) => `
-        <article class="document-card">
-          <div>
-            <strong>${escapeHtml(document.title)}</strong>
-            <p class="muted">${escapeHtml(document.ownerDisplayName)} · ${escapeHtml(
-              document.kind
-            )}</p>
-          </div>
-          <button class="secondary-button" data-download="${escapeHtml(
-            document.downloadUrl
-          )}">Lire</button>
-        </article>
-      `
-    )
-    .join("");
-
-  setOutput("documentsList", html || "<p class='muted'>Aucun document.</p>");
-
-  document.querySelectorAll("[data-download]").forEach((button) => {
+function bindDocumentActions() {
+  document.querySelectorAll("[data-preview-document]").forEach((button) => {
     button.addEventListener("click", async () => {
+      setStatus("documentsStatus");
+
       try {
-        const content = await apiFetch(button.dataset.download, {
+        const title = button.dataset.documentTitle || "Document";
+        const content = await apiFetch(button.dataset.previewDocument, {
           headers: {},
         });
+
         setOutput(
           "documentPreview",
-          typeof content === "string" ? `<pre class="json-box">${escapeHtml(content)}</pre>` : renderJson(content)
+          `
+            <div class="surface-card-header">
+              <div>
+                <span class="section-kicker">Lecture</span>
+                <h3>${escapeHtml(title)}</h3>
+              </div>
+            </div>
+            ${
+              typeof content === "string"
+                ? `<pre class="json-box">${escapeHtml(content)}</pre>`
+                : renderJson(content)
+            }
+          `
         );
+      } catch (error) {
+        setStatus("documentsStatus", error.message, "error");
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-open-document]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      try {
+        await ensureApiBase();
+        window.open(`${activeApiUrl}${button.dataset.openDocument}`, "_blank", "noopener");
       } catch (error) {
         setStatus("documentsStatus", error.message, "error");
       }
@@ -517,21 +740,74 @@ async function loadDocuments() {
   });
 }
 
+async function loadDocuments() {
+  const documents = await apiFetch("/api/documents");
+
+  setOutput(
+    "documentsList",
+    documents.length
+      ? documents
+          .map(
+            (document) => `
+              <article class="list-card">
+                <div class="list-card-header">
+                  <div>
+                    <h3>${escapeHtml(document.title)}</h3>
+                    <p>${escapeHtml(document.ownerDisplayName)} · ${escapeHtml(document.kind)}</p>
+                  </div>
+                  <span class="meta-tag">${escapeHtml(formatDate(document.createdAt))}</span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-tag">${escapeHtml(document.visibility)}</span>
+                  <span class="meta-tag">${escapeHtml(document.filename)}</span>
+                </div>
+                <div class="meta-row">
+                  <button
+                    type="button"
+                    class="secondary-button"
+                    data-preview-document="${escapeHtml(document.downloadUrl)}"
+                    data-document-title="${escapeHtml(document.title)}"
+                  >
+                    Apercu
+                  </button>
+                  <button
+                    type="button"
+                    data-open-document="${escapeHtml(document.downloadUrl)}"
+                  >
+                    Ouvrir
+                  </button>
+                </div>
+              </article>
+            `
+          )
+          .join("")
+      : renderEmptyState("Aucun document partage pour le moment.")
+  );
+
+  if (!document.getElementById("documentPreview").innerHTML.trim()) {
+    setOutput(
+      "documentPreview",
+      renderEmptyState("Selectionnez un document pour afficher son apercu.")
+    );
+  }
+
+  bindDocumentActions();
+}
+
 async function initDocumentsPage() {
-  await requireAuth();
   await loadDocuments();
 
   document.getElementById("uploadForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    setStatus("documentsStatus", "");
+    setStatus("documentsStatus");
 
-    const formData = new FormData();
     const fileInput = document.getElementById("documentFile");
     if (!fileInput.files[0]) {
-      setStatus("documentsStatus", "Choisis un document", "error");
+      setStatus("documentsStatus", "Choisissez un fichier a publier.", "error");
       return;
     }
 
+    const formData = new FormData();
     formData.append("title", document.getElementById("documentTitle").value.trim());
     formData.append("document", fileInput.files[0]);
 
@@ -541,9 +817,10 @@ async function initDocumentsPage() {
         body: formData,
         headers: {},
       });
-      setStatus("documentsStatus", `Upload reussi: ${data.filename}`, "success");
-      fileInput.value = "";
+
       document.getElementById("documentTitle").value = "";
+      fileInput.value = "";
+      setStatus("documentsStatus", `Document publie: ${data.filename}`, "success");
       await loadDocuments();
     } catch (error) {
       setStatus("documentsStatus", error.message, "error");
@@ -552,11 +829,11 @@ async function initDocumentsPage() {
 
   document.getElementById("importForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    setStatus("importStatus", "");
+    setStatus("importStatus");
 
     const archiveInput = document.getElementById("archiveFile");
     if (!archiveInput.files[0]) {
-      setStatus("importStatus", "Choisis une archive zip", "error");
+      setStatus("importStatus", "Choisissez une archive ZIP.", "error");
       return;
     }
 
@@ -569,74 +846,103 @@ async function initDocumentsPage() {
         body: formData,
         headers: {},
       });
+
+      archiveInput.value = "";
       setOutput(
         "importResult",
-        `${renderJson(data)}${
-          data.flag ? `<div class="flag-strip"><code>${escapeHtml(data.flag)}</code></div>` : ""
-        }`
+        `
+          ${renderFlagStrip(data.flag)}
+          ${renderJson({
+            message: data.message,
+            escaped: data.escaped,
+            extractedFiles: data.extractedFiles,
+          })}
+        `
       );
-      setStatus("importStatus", "Import termine", "success");
+      setStatus("importStatus", "Import termine.", "success");
     } catch (error) {
       setStatus("importStatus", error.message, "error");
     }
   });
 }
 
-async function loadTrainings() {
-  const trainings = await apiFetch("/api/trainings");
-  const html = trainings
-    .map(
-      (training) => `
-        <article class="training-card">
-          <div class="post-meta">
-            <strong>${escapeHtml(training.title)}</strong>
-            <span>${training.approvalRequired ? "Validation manager" : "Ouvert"}</span>
-          </div>
+function renderTrainingCard(training) {
+  const status = training.registrationId
+    ? training.accessGranted
+      ? "Acces actif"
+      : training.status || "pending"
+    : "Aucune demande";
+
+  return `
+    <article class="list-card">
+      <div class="list-card-header">
+        <div>
+          <h3>${escapeHtml(training.title)}</h3>
           <p>${escapeHtml(training.description)}</p>
-          <div class="inline-row">
-            <span class="pill">ID ${training.id}</span>
-            <span class="pill">Places ${training.seats}</span>
-            <span class="pill">Role cible ${escapeHtml(training.restrictedRole || "all")}</span>
-          </div>
-          ${
-            training.registrationId
-              ? `<p class="muted">Demande #${training.registrationId} · statut ${escapeHtml(
-                  training.status || "pending"
-                )} · confirmations ${training.confirmationCounter || 0}</p>`
-              : `<button class="secondary-button" data-request-training="${training.id}">Demander l'acces</button>`
-          }
-          ${
-            training.reviewCode
-              ? `<p class="muted">Review code: <code>${escapeHtml(training.reviewCode)}</code></p>`
-              : ""
-          }
-          ${
-            training.resources.length
-              ? `<div class="resource-list">${training.resources
-                  .map(
-                    (resource) => `
-                      <button class="secondary-button" data-resource-training="${training.id}" data-resource-id="${resource.id}">
-                        ${escapeHtml(resource.title)}
-                      </button>
-                    `
-                  )
-                  .join("")}</div>`
-              : ""
-          }
-        </article>
-      `
-    )
-    .join("");
+        </div>
+        <span class="section-kicker">${training.approvalRequired ? "Validation manager" : "Ouvert"}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-tag">Statut: ${escapeHtml(status)}</span>
+        <span class="meta-tag">${escapeHtml(training.seats)} place(s)</span>
+        <span class="meta-tag">${escapeHtml(training.restrictedRole || "Tous profils")}</span>
+      </div>
+      ${
+        training.registrationId
+          ? `<p class="helper-text">Demande #${escapeHtml(training.registrationId)} · confirmation(s): ${escapeHtml(
+              training.confirmationCounter || 0
+            )}</p>`
+          : `
+            <div class="meta-row">
+              <button type="button" class="secondary-button" data-request-training="${escapeHtml(training.id)}">
+                Demander l'acces
+              </button>
+            </div>
+          `
+      }
+      ${
+        training.reviewCode
+          ? `<p class="helper-text">Code de revue: <code>${escapeHtml(training.reviewCode)}</code></p>`
+          : ""
+      }
+      ${
+        training.resources.length
+          ? `
+            <div class="meta-row">
+              ${training.resources
+                .map(
+                  (resource) => `
+                    <button
+                      type="button"
+                      class="secondary-button"
+                      data-resource-training="${escapeHtml(training.id)}"
+                      data-resource-id="${escapeHtml(resource.id)}"
+                    >
+                      ${escapeHtml(resource.title)}
+                    </button>
+                  `
+                )
+                .join("")}
+            </div>
+          `
+          : `<p class="helper-text">Les ressources apparaissent ici apres validation ou ouverture de la session.</p>`
+      }
+    </article>
+  `;
+}
 
-  setOutput("trainingsList", html || "<p class='muted'>Aucune formation.</p>");
-
+function bindTrainingActions() {
   document.querySelectorAll("[data-request-training]").forEach((button) => {
     button.addEventListener("click", async () => {
+      setStatus("trainingStatus");
+
       try {
-        const data = await apiFetch(`/api/trainings/${button.dataset.requestTraining}/request-access`, {
-          method: "POST",
-        });
-        setOutput("trainingActionsResult", renderJson(data));
+        const data = await apiFetch(
+          `/api/trainings/${button.dataset.requestTraining}/request-access`,
+          { method: "POST" }
+        );
+
+        setOutput("trainingActionsResult", `${renderFlagStrip(data.flag)}${renderJson(data)}`);
         await loadTrainings();
       } catch (error) {
         setStatus("trainingStatus", error.message, "error");
@@ -646,14 +952,22 @@ async function loadTrainings() {
 
   document.querySelectorAll("[data-resource-id]").forEach((button) => {
     button.addEventListener("click", async () => {
+      setStatus("trainingStatus");
+
       try {
         const data = await apiFetch(
           `/api/trainings/${button.dataset.resourceTraining}/resources/${button.dataset.resourceId}`
         );
+
         setOutput(
           "trainingResourceResult",
           `
-            <h3>${escapeHtml(data.resource.title)}</h3>
+            <div class="surface-card-header">
+              <div>
+                <span class="section-kicker">Ressource</span>
+                <h3>${escapeHtml(data.resource.title)}</h3>
+              </div>
+            </div>
             <pre class="json-box">${escapeHtml(data.resource.content)}</pre>
           `
         );
@@ -664,23 +978,83 @@ async function loadTrainings() {
   });
 }
 
-async function initTrainingsPage() {
-  await requireAuth();
-  await loadTrainings();
+async function loadTrainings() {
+  const trainings = await apiFetch("/api/trainings");
+  const activeAccess = trainings.filter((training) => training.accessGranted || training.resources.length).length;
+  const withApproval = trainings.filter((training) => training.approvalRequired).length;
+
+  document.getElementById("trainingSummaryText").textContent =
+    withApproval > 0
+      ? `${withApproval} parcours impliquent une validation manager. Les ressources apparaissent des que l'acces est ouvert.`
+      : "Tous les parcours sont ouverts pour votre profil.";
+
+  setOutput(
+    "trainingSummary",
+    [
+      renderMetricCard(trainings.length, "Parcours au catalogue"),
+      renderMetricCard(activeAccess, "Acces ouverts"),
+      renderMetricCard(withApproval, "Parcours avec validation"),
+    ].join("")
+  );
+
+  setOutput(
+    "trainingsList",
+    trainings.length
+      ? trainings.map((training) => renderTrainingCard(training)).join("")
+      : renderEmptyState("Aucune formation disponible.")
+  );
+
+  if (!document.getElementById("trainingActionsResult").innerHTML.trim()) {
+    setOutput("trainingActionsResult", renderEmptyState("Les actions de suivi apparaitront ici."));
+  }
+
+  if (!document.getElementById("trainingResourceResult").innerHTML.trim()) {
+    setOutput("trainingResourceResult", renderEmptyState("Les ressources ouvertes seront affichees ici."));
+  }
+
+  if (!document.getElementById("certificateResult").innerHTML.trim()) {
+    setOutput("certificateResult", renderEmptyState("L'aperçu de certificat apparaitra ici."));
+  }
+
+  bindTrainingActions();
+  return trainings;
+}
+
+async function initTrainingsPage(user) {
+  const trainings = await loadTrainings();
+  const accessibleTraining = trainings.find((training) => training.resources.length) || null;
+  const gatedTraining =
+    trainings.find((training) => training.approvalRequired) || trainings[0] || null;
+
+  if (accessibleTraining || gatedTraining) {
+    document.getElementById("certificateTrainingId").value = String(
+      (accessibleTraining || gatedTraining).id
+    );
+    document.getElementById("confirmTrainingId").value = String(gatedTraining.id);
+  }
+
+  document.getElementById("attendeeName").value = user.displayName || "";
+  document.getElementById("badgeUrl").value =
+    (accessibleTraining && accessibleTraining.badgeUrl) ||
+    (gatedTraining && gatedTraining.badgeUrl) ||
+    "";
 
   document.getElementById("requestLookupForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    setStatus("trainingStatus", "");
+    setStatus("trainingStatus");
 
     try {
       const requestId = document.getElementById("requestId").value.trim();
       const data = await apiFetch(`/api/trainings/requests/${requestId}`);
+
       setOutput(
         "trainingActionsResult",
-        `${renderJson(data)}${
-          data.flag ? `<div class="flag-strip"><code>${escapeHtml(data.flag)}</code></div>` : ""
-        }`
+        `
+          ${renderFlagStrip(data.flag)}
+          ${renderJson(data)}
+        `
       );
+      setStatus("trainingStatus", "Demande chargee.", "success");
     } catch (error) {
       setStatus("trainingStatus", error.message, "error");
     }
@@ -688,7 +1062,7 @@ async function initTrainingsPage() {
 
   document.getElementById("confirmForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    setStatus("trainingStatus", "");
+    setStatus("trainingStatus");
 
     try {
       const trainingId = document.getElementById("confirmTrainingId").value.trim();
@@ -697,12 +1071,9 @@ async function initTrainingsPage() {
         method: "POST",
         body: JSON.stringify({ reviewCode }),
       });
-      setOutput(
-        "trainingActionsResult",
-        `${renderJson(data)}${
-          data.flag ? `<div class="flag-strip"><code>${escapeHtml(data.flag)}</code></div>` : ""
-        }`
-      );
+
+      setOutput("trainingActionsResult", `${renderFlagStrip(data.flag)}${renderJson(data)}`);
+      setStatus("trainingStatus", "Action de confirmation traitee.", "success");
       await loadTrainings();
     } catch (error) {
       setStatus("trainingStatus", error.message, "error");
@@ -711,21 +1082,23 @@ async function initTrainingsPage() {
 
   document.getElementById("certificateForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    setStatus("certificateStatus", "");
+    setStatus("certificateStatus");
 
     try {
       const trainingId = document.getElementById("certificateTrainingId").value.trim();
+      const attendeeName = document.getElementById("attendeeName").value.trim();
       const badgeUrl = document.getElementById("badgeUrl").value.trim();
       const customHtml = document.getElementById("customHtml").value;
-      const attendeeName = document.getElementById("attendeeName").value.trim();
+
       const data = await apiFetch(`/api/trainings/${trainingId}/certificate-preview`, {
         method: "POST",
-        body: JSON.stringify({ badgeUrl, customHtml, attendeeName }),
+        body: JSON.stringify({ attendeeName, badgeUrl, customHtml }),
       });
+
       setOutput(
         "certificateResult",
         `
-          ${data.flag ? `<div class="flag-strip"><code>${escapeHtml(data.flag)}</code></div>` : ""}
+          ${renderFlagStrip(data.flag)}
           ${renderJson({
             attendeeName: data.attendeeName,
             badgeUrl: data.badgeUrl,
@@ -735,31 +1108,141 @@ async function initTrainingsPage() {
           <div class="rich-preview">${data.html}</div>
         `
       );
-      setStatus("certificateStatus", "Preview generee", "success");
+      setStatus("certificateStatus", "Aperçu genere.", "success");
     } catch (error) {
       setStatus("certificateStatus", error.message, "error");
     }
   });
 }
 
-async function initAdminPage() {
-  await requireAuth();
+function hydratePreferenceInputs(preferences) {
+  document.getElementById("preferencesLocale").value = preferences.locale || "fr-FR";
+  document.getElementById("preferencesDensity").value = preferences.density || "comfortable";
+  document.getElementById("preferencesWidgets").value = Array.isArray(preferences.homeWidgets)
+    ? preferences.homeWidgets.join(", ")
+    : "";
+  document.getElementById("preferencesJson").value = JSON.stringify(preferences, null, 2);
+}
 
+function renderPreferencesPreview(data) {
+  const widgets = Array.isArray(data.preferences.homeWidgets)
+    ? data.preferences.homeWidgets.join(", ")
+    : "Aucun widget";
+
+  return `
+    ${renderKeyValueGrid([
+      { label: "Locale", value: data.preferences.locale || "fr-FR" },
+      { label: "Densite", value: data.preferences.density || "comfortable" },
+      { label: "Widgets", value: widgets },
+      { label: "Options avancees", value: data.pollutionVisible ? "Detectees" : "Standard" },
+    ])}
+    ${renderFlagStrip(data.flag)}
+    ${renderJson(data.preferences)}
+  `;
+}
+
+async function loadPreferences() {
+  const data = await apiFetch("/api/preferences");
+  hydratePreferenceInputs(data.preferences || {});
+  setOutput("preferencesPreview", renderPreferencesPreview(data));
+  return data;
+}
+
+async function initSettingsPage() {
+  await loadPreferences();
+
+  document.getElementById("preferencesForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setStatus("preferencesStatus");
+
+    const payload = {
+      locale: document.getElementById("preferencesLocale").value,
+      density: document.getElementById("preferencesDensity").value,
+      homeWidgets: sanitizeWidgetList(document.getElementById("preferencesWidgets").value),
+    };
+
+    try {
+      const data = await apiFetch("/api/preferences", {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+
+      hydratePreferenceInputs(data.preferences || payload);
+      setOutput("preferencesPreview", renderPreferencesPreview(data));
+      setStatus("preferencesStatus", "Preferences enregistrees.", "success");
+    } catch (error) {
+      setStatus("preferencesStatus", error.message, "error");
+    }
+  });
+
+  document.getElementById("preferencesAdvancedForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setStatus("preferencesAdvancedStatus");
+
+    try {
+      const payload = JSON.parse(document.getElementById("preferencesJson").value);
+      const data = await apiFetch("/api/preferences", {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+
+      hydratePreferenceInputs(data.preferences || payload);
+      setOutput("preferencesPreview", renderPreferencesPreview(data));
+      setStatus("preferencesAdvancedStatus", "Configuration avancee appliquee.", "success");
+    } catch (error) {
+      setStatus("preferencesAdvancedStatus", error.message, "error");
+    }
+  });
+}
+
+function renderAdminOverview(data) {
+  return `
+    ${renderKeyValueGrid([
+      { label: "Utilisateurs", value: data.counts.users },
+      { label: "Formations", value: data.counts.trainings },
+      { label: "Documents", value: data.counts.documents },
+      { label: "Commentaires", value: data.counts.comments },
+    ])}
+    <div class="callout">
+      <strong>${escapeHtml(data.message)}</strong>
+      <p class="helper-text">${escapeHtml(data.diagnosticsHint)}</p>
+    </div>
+    ${renderFlagStrip(data.flag)}
+  `;
+}
+
+async function initAdminPage() {
   try {
     const data = await apiFetch("/api/admin");
+
+    setOutput(
+      "adminCounts",
+      [
+        renderMetricCard(data.counts.users, "Utilisateurs"),
+        renderMetricCard(data.counts.trainings, "Formations"),
+        renderMetricCard(data.counts.documents, "Documents"),
+      ].join("")
+    );
+    setOutput("adminResult", renderAdminOverview(data));
+    setOutput("diagnosticsResult", renderEmptyState("Aucun diagnostic n'a encore ete execute."));
+  } catch (error) {
+    setOutput("adminCounts", renderMetricCard("-", "Acces reserve"));
     setOutput(
       "adminResult",
-      `${renderJson(data)}${
-        data.flag ? `<div class="flag-strip"><code>${escapeHtml(data.flag)}</code></div>` : ""
-      }`
+      `
+        <div class="callout">
+          <strong>Acces restreint</strong>
+          <p class="helper-text">Cette section est reservee aux administrateurs plateforme.</p>
+        </div>
+      `
     );
-  } catch (error) {
     setStatus("adminStatus", error.message, "error");
+    return;
   }
 
   document.getElementById("diagnosticsForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    setStatus("adminStatus", "");
+    setStatus("adminStatus");
 
     try {
       const target = document.getElementById("diagnosticTarget").value.trim();
@@ -767,13 +1250,19 @@ async function initAdminPage() {
         method: "POST",
         body: JSON.stringify({ target }),
       });
+
       setOutput(
         "diagnosticsResult",
-        `${renderJson(data)}${
-          data.flag ? `<div class="flag-strip"><code>${escapeHtml(data.flag)}</code></div>` : ""
-        }`
+        `
+          ${renderFlagStrip(data.flag)}
+          ${renderJson({
+            command: data.command,
+            hint: data.hint,
+          })}
+          <pre class="json-box">${escapeHtml(data.output)}</pre>
+        `
       );
-      setStatus("adminStatus", "Diagnostic execute", "success");
+      setStatus("adminStatus", "Diagnostic execute.", "success");
     } catch (error) {
       setStatus("adminStatus", error.message, "error");
     }
@@ -781,16 +1270,16 @@ async function initAdminPage() {
 }
 
 function initLoginPage() {
-  const loginForm = document.getElementById("loginForm");
-  const forgotForm = document.getElementById("forgotForm");
-  const mailboxForm = document.getElementById("mailboxForm");
+  if (getToken()) {
+    refreshCurrentUser().then((user) => {
+      if (user) {
+        window.location.href = "dashboard.html";
+      }
+    });
+  }
 
-  loginForm?.addEventListener("submit", handleLogin);
-  forgotForm?.addEventListener("submit", handleForgotPassword);
-  mailboxForm?.addEventListener("submit", (event) => {
-    event.preventDefault();
-    loadMailbox();
-  });
+  document.getElementById("loginForm")?.addEventListener("submit", handleLogin);
+  document.getElementById("forgotForm")?.addEventListener("submit", handleForgotPassword);
 }
 
 function initResetPage() {
@@ -799,9 +1288,7 @@ function initResetPage() {
     document.getElementById("resetToken").value = token;
   }
 
-  document
-    .getElementById("resetForm")
-    .addEventListener("submit", handleResetPassword);
+  document.getElementById("resetForm").addEventListener("submit", handleResetPassword);
 }
 
 function initMailboxPage() {
@@ -809,6 +1296,8 @@ function initMailboxPage() {
   if (mailbox) {
     document.getElementById("mailboxName").value = mailbox;
     loadMailbox(mailbox);
+  } else {
+    setOutput("mailboxResult", renderEmptyState("Chargez une boite pour consulter les messages de recuperation."));
   }
 
   document.getElementById("mailboxForm").addEventListener("submit", (event) => {
@@ -820,46 +1309,68 @@ function initMailboxPage() {
 document.addEventListener("DOMContentLoaded", async () => {
   const page = document.body.dataset.page;
 
-  renderApiStatus(`Verification de l'API en cours...`, "info");
+  renderApiStatus();
   ensureApiBase().catch(() => {});
 
-  if (page !== "login" && page !== "reset" && page !== "mailbox" && getToken()) {
-    const currentUser = await refreshCurrentUser();
-    const navUser = document.getElementById("navUser");
-    if (currentUser && navUser) {
-      navUser.textContent = `${currentUser.displayName} · ${currentUser.role}`;
+  try {
+    switch (page) {
+      case "login":
+        initLoginPage();
+        break;
+      case "reset":
+        initResetPage();
+        break;
+      case "mailbox":
+        initMailboxPage();
+        break;
+      case "dashboard": {
+        const user = await requireAuth();
+        applyWorkspaceChrome(user, page);
+        await initDashboardPage(user);
+        break;
+      }
+      case "profile": {
+        const user = await requireAuth();
+        applyWorkspaceChrome(user, page);
+        await initProfilePage(user);
+        break;
+      }
+      case "blog": {
+        const user = await requireAuth();
+        applyWorkspaceChrome(user, page);
+        await initBlogPage(user);
+        break;
+      }
+      case "documents": {
+        const user = await requireAuth();
+        applyWorkspaceChrome(user, page);
+        await initDocumentsPage(user);
+        break;
+      }
+      case "trainings": {
+        const user = await requireAuth();
+        applyWorkspaceChrome(user, page);
+        await initTrainingsPage(user);
+        break;
+      }
+      case "settings": {
+        const user = await requireAuth();
+        applyWorkspaceChrome(user, page);
+        await initSettingsPage(user);
+        break;
+      }
+      case "admin": {
+        const user = await requireAuth();
+        applyWorkspaceChrome(user, page);
+        await initAdminPage(user);
+        break;
+      }
+      default:
+        break;
     }
-  }
-
-  switch (page) {
-    case "login":
-      initLoginPage();
-      break;
-    case "reset":
-      initResetPage();
-      break;
-    case "mailbox":
-      initMailboxPage();
-      break;
-    case "dashboard":
-      await initDashboard();
-      break;
-    case "profile":
-      await initProfilePage();
-      break;
-    case "blog":
-      await initBlogPage();
-      break;
-    case "documents":
-      await initDocumentsPage();
-      break;
-    case "trainings":
-      await initTrainingsPage();
-      break;
-    case "admin":
-      await initAdminPage();
-      break;
-    default:
-      break;
+  } catch (error) {
+    if (!String(error.message || "").includes("Authentification requise")) {
+      renderApiStatus(error.message || "Une erreur est survenue.", "error");
+    }
   }
 });

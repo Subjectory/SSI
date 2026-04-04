@@ -3,49 +3,82 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CorpHack Profil</title>
+  <title>Horizon · Profil</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body data-page="profile">
-  <main class="page-shell">
-    <header class="topbar">
-      <div class="brand-block">
-        <h1>Profils internes</h1>
-        <p>Consultation des informations employee, manager ou admin.</p>
-      </div>
-      <div class="inline-row">
-        <span id="navUser" class="pill">Session</span>
-        <button onclick="logout()">Deconnexion</button>
-      </div>
-    </header>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="brand-lockup">
+        <span class="brand-pill">CorpHack</span>
+        <strong>Horizon</strong>
+        <small>Votre point d’entrée pour les parcours, ressources et communications internes.</small>
+      </a>
+      <section class="sidebar-user">
+        <strong data-user-name>Collaborateur</strong>
+        <span data-user-role>Session active</span>
+        <small data-user-email>user@corphack.local</small>
+      </section>
+      <section class="sidebar-group">
+        <p class="sidebar-label">Workspace</p>
+        <a class="sidebar-link" data-nav-target="dashboard" href="dashboard.html">Accueil</a>
+        <a class="sidebar-link" data-nav-target="trainings" href="trainings.html">Formations</a>
+        <a class="sidebar-link" data-nav-target="documents" href="documents.html">Documents</a>
+        <a class="sidebar-link" data-nav-target="blog" href="blog.html">Annonces</a>
+      </section>
+      <section class="sidebar-group">
+        <p class="sidebar-label">Compte</p>
+        <a class="sidebar-link" data-nav-target="profile" href="profile.html">Profil</a>
+        <a class="sidebar-link" data-nav-target="settings" href="settings.html">Paramètres</a>
+        <a class="sidebar-link" data-admin-only data-nav-target="admin" href="admin.html" hidden>Admin</a>
+      </section>
+      <div class="sidebar-spacer"></div>
+      <button class="secondary-button" onclick="logout()">Déconnexion</button>
+    </aside>
 
-    <nav class="nav">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="profile.html">Profil</a>
-      <a href="blog.html">Annonces</a>
-      <a href="upload.html">Documents</a>
-      <a href="trainings.html">Formations</a>
-      <a href="admin.html">Admin</a>
-    </nav>
-    <div data-api-status class="status-box info">Verification de l'API...</div>
+    <main class="workspace">
+      <header class="workspace-header">
+        <div>
+          <span class="section-kicker">Compte</span>
+          <h1>Mon profil</h1>
+          <p>Consultez vos informations principales et accédez à la recherche avancée si votre rôle le permet.</p>
+        </div>
+        <div class="workspace-toolbar">
+          <div data-api-status class="status-box error" hidden></div>
+        </div>
+      </header>
 
-    <section class="single-column">
-      <article class="card">
-        <h2>Recherche de profil</h2>
-        <form id="profileLookupForm" class="stack">
-          <label for="profileId">ID du profil</label>
-          <input id="profileId" type="number" min="1" />
-          <button type="submit">Charger</button>
-        </form>
-        <div id="profileStatus" class="status-box info"></div>
-      </article>
+      <section class="workspace-split">
+        <article class="surface-card">
+          <div class="surface-card-header">
+            <div>
+              <span class="section-kicker">Identité</span>
+              <h2>Fiche collaborateur</h2>
+            </div>
+          </div>
+          <div id="profileResult"></div>
+          <div id="profileStatus" class="status-box error" hidden></div>
+        </article>
 
-      <article class="card">
-        <h2>Resultat</h2>
-        <div id="profileResult"></div>
-      </article>
-    </section>
-  </main>
+        <aside class="aside-stack">
+          <article class="surface-card">
+            <span class="section-kicker">Accès</span>
+            <h3>Recherche avancée</h3>
+            <p class="helper-text">Utilisez un identifiant interne si vous devez ouvrir une autre fiche autorisée.</p>
+            <form id="profileLookupForm" class="stack">
+              <label for="profileId">Identifiant interne</label>
+              <input id="profileId" type="number" min="1" />
+              <button type="submit" class="secondary-button">Ouvrir la fiche</button>
+            </form>
+          </article>
+          <article class="callout">
+            <strong>Bon à savoir</strong>
+            <p class="helper-text">Les modifications avancées de compte et les préférences produit sont disponibles dans l’espace Paramètres.</p>
+          </article>
+        </aside>
+      </section>
+    </main>
+  </div>
 
   <script type="module" src="js/app.js"></script>
 </body>

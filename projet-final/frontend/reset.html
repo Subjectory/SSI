@@ -3,35 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CorpHack Reset Password</title>
+  <title>Horizon · Nouveau mot de passe</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body data-page="reset">
-  <main class="landing-shell">
-    <section class="landing-hero">
-      <span class="eyebrow">Reset password</span>
-      <h1>Reinitialisation du compte employee.</h1>
-      <p class="muted">
-        Utilise le token issu de la mailbox preview pour definir un nouveau mot de passe puis revenir au dashboard.
-      </p>
-    </section>
+  <main class="marketing-shell">
+    <section class="marketing-main">
+      <div class="brand-kicker">
+        <strong>CorpHack</strong>
+        <span>Horizon</span>
+      </div>
 
-    <section class="landing-panel">
-      <section class="card">
-        <h2>Mettre a jour le mot de passe</h2>
-        <div data-api-status class="status-box info">Verification de l'API...</div>
-        <form id="resetForm" class="stack">
-          <label for="resetToken">Token</label>
-          <input id="resetToken" type="text" placeholder="uuid" required />
+      <section class="marketing-hero">
+        <span class="section-kicker">Recuperation de compte</span>
+        <h1>Definir un nouveau mot de passe.</h1>
+        <p>Renseignez le jeton recu dans votre message de recuperation puis choisissez un nouveau mot de passe pour revenir dans votre espace Horizon.</p>
+        <div class="marketing-actions">
+          <a href="index.html" class="button-link secondary-button">Retour a la connexion</a>
+          <a href="mailbox.html" class="button-link">Consulter les messages</a>
+        </div>
+      </section>
 
-          <label for="resetPassword">Nouveau mot de passe</label>
-          <input id="resetPassword" type="password" placeholder="NewPassword!2026" required />
-
-          <button type="submit">Valider</button>
-        </form>
-        <div id="resetStatus" class="status-box info"></div>
+      <section class="proof-card">
+        <span class="section-kicker">Bon reflexe</span>
+        <h3>Utiliser le lien emis par Horizon</h3>
+        <p>Si le champ token est deja pre-rempli, vous pouvez finaliser la mise a jour et etre reconnecte automatiquement.</p>
       </section>
     </section>
+
+    <aside class="auth-column">
+      <section class="auth-card">
+        <span class="section-kicker">Action</span>
+        <h2>Mettre a jour le mot de passe</h2>
+        <div data-api-status class="status-box error" hidden></div>
+        <form id="resetForm" class="stack">
+          <label for="resetToken">Jeton de recuperation</label>
+          <input id="resetToken" type="text" placeholder="Collez le jeton recu" required />
+
+          <label for="resetPassword">Nouveau mot de passe</label>
+          <input id="resetPassword" type="password" placeholder="Choisissez un mot de passe robuste" required />
+
+          <button type="submit">Enregistrer et se reconnecter</button>
+        </form>
+        <div id="resetStatus" class="status-box info" hidden></div>
+      </section>
+    </aside>
   </main>
 
   <script type="module" src="js/app.js"></script>

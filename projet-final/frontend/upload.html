@@ -2,73 +2,13 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="refresh" content="0; url=documents.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CorpHack Documents</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <title>Redirection · Horizon Documents</title>
 </head>
-<body data-page="documents">
-  <main class="page-shell">
-    <header class="topbar">
-      <div class="brand-block">
-        <h1>Documents et imports</h1>
-        <p>Hub documentaire interne et import d'archives de ressources.</p>
-      </div>
-      <div class="inline-row">
-        <span id="navUser" class="pill">Session</span>
-        <button onclick="logout()">Deconnexion</button>
-      </div>
-    </header>
-
-    <nav class="nav">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="profile.html">Profil</a>
-      <a href="blog.html">Annonces</a>
-      <a href="upload.html">Documents</a>
-      <a href="trainings.html">Formations</a>
-      <a href="admin.html">Admin</a>
-    </nav>
-    <div data-api-status class="status-box info">Verification de l'API...</div>
-
-    <section class="split-columns">
-      <article class="card">
-        <h2>Depot de document</h2>
-        <form id="uploadForm" class="stack">
-          <label for="documentTitle">Titre</label>
-          <input id="documentTitle" type="text" placeholder="Procedure interne" />
-
-          <label for="documentFile">Fichier</label>
-          <input id="documentFile" type="file" />
-
-          <button type="submit">Uploader</button>
-        </form>
-        <div id="documentsStatus" class="status-box info"></div>
-      </article>
-
-      <article class="card">
-        <h2>Import archive ressources</h2>
-        <form id="importForm" class="stack">
-          <label for="archiveFile">Archive zip</label>
-          <input id="archiveFile" type="file" accept=".zip" />
-          <button type="submit" class="secondary-button">Importer</button>
-        </form>
-        <div id="importStatus" class="status-box info"></div>
-        <div id="importResult"></div>
-      </article>
-    </section>
-
-    <section class="split-columns">
-      <article class="card">
-        <h2>Liste des documents</h2>
-        <div id="documentsList"></div>
-      </article>
-
-      <article class="card">
-        <h2>Preview</h2>
-        <div id="documentPreview"></div>
-      </article>
-    </section>
-  </main>
-
-  <script type="module" src="js/app.js"></script>
+<body>
+  <script>
+    window.location.replace("documents.html" + window.location.search + window.location.hash);
+  </script>
 </body>
 </html>
