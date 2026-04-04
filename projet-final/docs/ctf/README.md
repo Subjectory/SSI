@@ -6,6 +6,7 @@ Contenu:
 - `seeds.md`: comptes et donnees de depart
 - `flags.md`: liste des flags et points d'obtention
 - `parcours.md`: kill chain principale et quetes laterales
+- `vulnerabilities.md`: liste des vulnérabilités avec explication courte
 
 Principe:
 - l'UX publique reste orientee produit RH / formation
