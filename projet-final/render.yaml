@@ -3,7 +3,7 @@ services:
   - type: web
     name: corphack-horizon-api
     runtime: node
-    plan: starter
+    plan: free
     rootDir: backend
     buildCommand: npm install
     startCommand: npm start
@@ -14,7 +14,7 @@ services:
       - key: PORT
         value: "10000"
       - key: DATA_ROOT
-        value: /var/data/corphack
+        value: /tmp/corphack
       - key: FRONTEND_PROTO
         value: https
       - key: FRONTEND_HOST
@@ -22,10 +22,6 @@ services:
           name: corphack-horizon-frontend
           type: web
           property: host
-    disk:
-      name: corphack-data
-      mountPath: /var/data/corphack
-      sizeGB: 10
 
   - type: web
     name: corphack-horizon-frontend
