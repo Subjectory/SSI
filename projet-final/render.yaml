@@ -4,7 +4,7 @@ services:
     name: corphack-horizon-api
     runtime: node
     plan: free
-    rootDir: backend
+    rootDir: projet-final/backend
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /
@@ -26,7 +26,7 @@ services:
   - type: web
     name: corphack-horizon-frontend
     runtime: static
-    rootDir: frontend
+    rootDir: projet-final/frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
