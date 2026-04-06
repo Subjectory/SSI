@@ -16,9 +16,9 @@ Note:
 ## Variables importantes
 
 - `DATA_ROOT=/tmp/corphack`
-- `FRONTEND_HOST` recupere automatiquement le host public du frontend
+- `FRONTEND_HOST` recupere automatiquement le hostname public `onrender.com` du frontend
 - `FRONTEND_PROTO=https`
-- `VITE_API_HOST` recupere automatiquement le host public du backend
+- `VITE_API_HOST` recupere automatiquement l'URL publique `onrender.com` du backend
 
 ## Stockage et limites
 
