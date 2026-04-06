@@ -2,12 +2,16 @@
 
 ## Architecture
 
-- `corphack-horizon-frontend`: static site Render en plan gratuit
+- `corphack-horizon-frontend`: static site Render gratuit
 - `corphack-horizon-api`: web service Render en plan gratuit
 - aucune ressource payante n'est utilisee dans ce Blueprint
 - les preview environments ne sont pas activees dans ce Blueprint
 
 Le fichier `render.yaml` declare ces 2 services.
+
+Note:
+- le backend declare explicitement `plan: free`
+- le frontend statique n'a pas de champ `plan` dans le Blueprint
 
 ## Variables importantes
 
