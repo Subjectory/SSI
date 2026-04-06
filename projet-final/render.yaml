@@ -1,0 +1,44 @@
+# Preview environments are intentionally not enabled for this Blueprint.
+services:
+  - type: web
+    name: corphack-horizon-api
+    runtime: node
+    plan: starter
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: PORT
+        value: "10000"
+      - key: DATA_ROOT
+        value: /var/data/corphack
+      - key: FRONTEND_PROTO
+        value: https
+      - key: FRONTEND_HOST
+        fromService:
+          name: corphack-horizon-frontend
+          type: web
+          property: host
+    disk:
+      name: corphack-data
+      mountPath: /var/data/corphack
+      sizeGB: 10
+
+  - type: web
+    name: corphack-horizon-frontend
+    runtime: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: VITE_API_HOST
+        fromService:
+          name: corphack-horizon-api
+          type: web
+          property: host

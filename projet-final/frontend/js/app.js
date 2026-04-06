@@ -1,18 +1,35 @@
 const API_CONFIG_KEY = "corphack_api_url";
+const ENV_API_HOST = import.meta.env.VITE_API_HOST;
 
-function buildApiCandidates() {
-  const searchParams = new URLSearchParams(window.location.search);
-  const queryApi = searchParams.get("api");
-  const savedApi = localStorage.getItem(API_CONFIG_KEY);
-  const candidates = [queryApi, savedApi];
+function normalizeApiCandidate(value) {
+  const normalized = String(value || "").trim().replace(/\/+$/, "");
+  if (!normalized) {
+    return null;
+  }
 
-  if (
+  if (/^https?:\/\//i.test(normalized)) {
+    return normalized;
+  }
+
+  return `https://${normalized}`;
+}
+
+function isLocalFrontendContext() {
+  return (
     window.location.protocol === "file:" ||
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1"
-  ) {
-    candidates.push("http://localhost:3000", "http://127.0.0.1:3000");
-  } else {
+  );
+}
+
+function buildApiCandidates() {
+  const searchParams = new URLSearchParams(window.location.search);
+  const queryApi = normalizeApiCandidate(searchParams.get("api"));
+  const savedApi = normalizeApiCandidate(localStorage.getItem(API_CONFIG_KEY));
+  const configuredApi = normalizeApiCandidate(ENV_API_HOST);
+  const candidates = [queryApi, savedApi, configuredApi];
+
+  if (isLocalFrontendContext()) {
     candidates.push("http://localhost:3000", "http://127.0.0.1:3000");
   }
 
@@ -20,7 +37,10 @@ function buildApiCandidates() {
 }
 
 let apiCandidates = buildApiCandidates();
-let activeApiUrl = apiCandidates[0] || "http://localhost:3000";
+let activeApiUrl =
+  apiCandidates[0] ||
+  normalizeApiCandidate(ENV_API_HOST) ||
+  "http://localhost:3000";
 let apiCheckPromise = null;
 
 function getToken() {
@@ -183,6 +203,10 @@ function setOutput(elementId, html = "") {
 function buildNetworkErrorMessage(apiUrl) {
   if (window.location.protocol === "https:" && String(apiUrl).startsWith("http://")) {
     return `Le navigateur bloque probablement un appel HTTP depuis une page HTTPS. Ouvrez le frontend sur http://localhost:5173 ou exposez aussi le backend en HTTPS. API cible: ${apiUrl}`;
+  }
+
+  if (!isLocalFrontendContext()) {
+    return `API introuvable sur ${apiUrl}. Verifiez la variable VITE_API_HOST et le deploiement du backend Render.`;
   }
 
   return `Backend introuvable sur ${apiUrl}. Lancez npm start dans /backend puis rechargez la page.`;

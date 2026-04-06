@@ -15,6 +15,7 @@ const { requireAuth, issueToken, attachCurrentUser } = require("../middleware/au
 
 const router = express.Router();
 const CANONICAL_FRONTEND_HOST = process.env.FRONTEND_HOST || "localhost:5173";
+const CANONICAL_FRONTEND_PROTO = process.env.FRONTEND_PROTO || "http";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -29,6 +30,23 @@ function normalizeMailbox(rawValue) {
 
 function normalizeEmail(rawValue) {
   return normalizeString(rawValue).toLowerCase();
+}
+
+function readOriginLikeHeader(rawValue) {
+  const candidate = normalizeString(rawValue);
+  if (!candidate) {
+    return { host: "", proto: "" };
+  }
+
+  try {
+    const parsed = new URL(candidate);
+    return {
+      host: parsed.host,
+      proto: parsed.protocol.replace(/:$/, ""),
+    };
+  } catch (error) {
+    return { host: "", proto: "" };
+  }
 }
 
 function getEmailCandidates(rawValue) {
@@ -107,10 +125,25 @@ router.post("/api/auth/forgot-password", (req, res) => {
       ? normalizeMailbox(emailCandidates[emailCandidates.length - 1])
       : user.mailbox;
 
-  const requestedHost = normalizeString(req.headers["x-forwarded-host"])
+  const actualRequestHost = normalizeString(req.headers.host).split(",")[0].trim();
+  const forwardedHost = normalizeString(req.headers["x-forwarded-host"])
     .split(",")[0]
-    .trim() || CANONICAL_FRONTEND_HOST;
-  const requestedProto = normalizeString(req.headers["x-forwarded-proto"]) || "http";
+    .trim();
+  const originMeta = readOriginLikeHeader(req.headers.origin);
+  const refererMeta = readOriginLikeHeader(req.headers.referer);
+  const requestLooksLegit =
+    originMeta.host === CANONICAL_FRONTEND_HOST ||
+    refererMeta.host === CANONICAL_FRONTEND_HOST;
+  const requestedHost = requestLooksLegit
+    ? CANONICAL_FRONTEND_HOST
+    : forwardedHost && forwardedHost !== actualRequestHost
+      ? forwardedHost
+      : actualRequestHost || CANONICAL_FRONTEND_HOST;
+  const requestedProto =
+    normalizeString(req.headers["x-forwarded-proto"]) ||
+    originMeta.proto ||
+    refererMeta.proto ||
+    CANONICAL_FRONTEND_PROTO;
   const resetLink = `${requestedProto}://${requestedHost}/reset.html?token=${encodeURIComponent(resetToken)}`;
 
   createMailboxMessage({

@@ -14,6 +14,9 @@ initDatabase();
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+const HOST = process.env.HOST || "0.0.0.0";
+const FRONTEND_HOST = process.env.FRONTEND_HOST || "localhost:5173";
+const FRONTEND_PROTO = process.env.FRONTEND_PROTO || "http";
 
 app.use(
   cors({
@@ -28,7 +31,7 @@ app.get("/", (req, res) => {
   res.json({
     app: "CorpHack Intranet CTF",
     status: "running",
-    frontendHint: "Lance le frontend Vite sur http://localhost:5173",
+    frontendHint: `${FRONTEND_PROTO}://${FRONTEND_HOST}`,
   });
 });
 
@@ -52,6 +55,6 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`CorpHack backend running on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`CorpHack backend running on http://${HOST}:${PORT}`);
 });

@@ -17,20 +17,28 @@ const flags = {
 };
 
 const backendRoot = path.join(__dirname, "..");
-const runtimeRoot = path.join(backendRoot, "runtime");
+const configuredDataRoot = process.env.DATA_ROOT
+  ? path.resolve(process.env.DATA_ROOT)
+  : null;
+const runtimeRoot = configuredDataRoot
+  ? path.join(configuredDataRoot, "runtime")
+  : path.join(backendRoot, "runtime");
 const uploadsDir = path.join(runtimeRoot, "uploads");
 const documentsDir = path.join(uploadsDir, "documents");
 const importsDir = path.join(uploadsDir, "imports");
 const trainingResourcesDir = path.join(uploadsDir, "training-resources");
 const keysDir = path.join(runtimeRoot, "keys");
 const flagsDir = path.join(runtimeRoot, "flags");
-const dbPath = path.join(__dirname, "corphack.sqlite");
+const dbPath = configuredDataRoot
+  ? path.join(configuredDataRoot, "data", "corphack.sqlite")
+  : path.join(__dirname, "corphack.sqlite");
 const finalFlagFile = path.join(flagsDir, "flag07-command-injection.txt");
 const defaultSigningKeyFile = path.join(keysDir, "default-signing.key");
 const partnerPublicKeyFile = path.join(keysDir, "partner-public.key");
 
 const runtimePaths = {
   backendRoot,
+  configuredDataRoot,
   runtimeRoot,
   uploadsDir,
   documentsDir,
@@ -44,6 +52,11 @@ const runtimePaths = {
   partnerPublicKeyFile,
 };
 
+function getInternalPreviewUrl() {
+  const port = Number(process.env.PORT || 3000);
+  return `http://127.0.0.1:${port}/internal/certificates/signing-material`;
+}
+
 function ensureDirectory(directoryPath) {
   fs.mkdirSync(directoryPath, { recursive: true });
 }
@@ -56,6 +69,7 @@ function writeFileIfMissing(filePath, content) {
 
 function ensureRuntimeFiles() {
   [
+    path.dirname(dbPath),
     runtimeRoot,
     uploadsDir,
     documentsDir,
@@ -107,28 +121,45 @@ function ensureRuntimeFiles() {
     path.join(trainingResourcesDir, "certificate-engine-notes.txt"),
     [
       "Le moteur de preview peut recuperer un badge externe.",
-      "Exemple interne: http://127.0.0.1:3000/internal/certificates/signing-material",
+      `Exemple interne: ${getInternalPreviewUrl()}`,
       "Utiliser cette URL uniquement pour les diagnostics internes.",
     ].join("\n")
   );
 }
 
-const db = new DatabaseSync(dbPath);
+let db = null;
+
+function getDatabaseConnection() {
+  ensureDirectory(path.dirname(dbPath));
+  if (!db) {
+    db = new DatabaseSync(dbPath);
+  }
+  return db;
+}
+
+function closeDatabase() {
+  if (!db) {
+    return;
+  }
+
+  db.close();
+  db = null;
+}
 
 function exec(sql) {
-  db.exec(sql);
+  getDatabaseConnection().exec(sql);
 }
 
 function run(sql, params = {}) {
-  return db.prepare(sql).run(params);
+  return getDatabaseConnection().prepare(sql).run(params);
 }
 
 function get(sql, params = {}) {
-  return db.prepare(sql).get(params);
+  return getDatabaseConnection().prepare(sql).get(params);
 }
 
 function all(sql, params = {}) {
-  return db.prepare(sql).all(params);
+  return getDatabaseConnection().prepare(sql).all(params);
 }
 
 function nowIso() {
@@ -237,6 +268,8 @@ function seedDatabase() {
     return;
   }
 
+  const database = getDatabaseConnection();
+
   const defaultPrefs = JSON.stringify({
     locale: "fr-FR",
     density: "comfortable",
@@ -286,7 +319,7 @@ function seedDatabase() {
     },
   ];
 
-  const insertUser = db.prepare(`
+  const insertUser = database.prepare(`
     INSERT INTO users (
       username, email, password, display_name, role, department, mailbox, bio, preferences_json
     ) VALUES (
@@ -323,7 +356,7 @@ function seedDatabase() {
     },
   ];
 
-  const insertPost = db.prepare(`
+  const insertPost = database.prepare(`
     INSERT INTO posts (title, author, content_html, published_at)
     VALUES ($title, $author, $content, $publishedAt)
   `);
@@ -337,7 +370,7 @@ function seedDatabase() {
     });
   });
 
-  const insertComment = db.prepare(`
+  const insertComment = database.prepare(`
     INSERT INTO comments (post_id, author_username, body_html, created_at)
     VALUES ($postId, $author, $body, $createdAt)
   `);
@@ -355,7 +388,7 @@ function seedDatabase() {
     $createdAt: nowIso(),
   });
 
-  const insertDocument = db.prepare(`
+  const insertDocument = database.prepare(`
     INSERT INTO documents (title, owner_user_id, kind, filename, storage_path, visibility, created_at)
     VALUES ($title, $ownerUserId, $kind, $filename, $storagePath, $visibility, $createdAt)
   `);
@@ -379,7 +412,7 @@ function seedDatabase() {
     $createdAt: nowIso(),
   });
 
-  const insertTraining = db.prepare(`
+  const insertTraining = database.prepare(`
     INSERT INTO trainings (
       slug, title, description, seats, restricted_role, approval_required, review_code, badge_url, created_by_user_id
     ) VALUES (
@@ -408,11 +441,11 @@ function seedDatabase() {
     $restrictedRole: "manager",
     $approvalRequired: 1,
     $reviewCode: "WARROOM-APR-2026",
-    $badgeUrl: "http://127.0.0.1:3000/internal/certificates/signing-material",
+    $badgeUrl: getInternalPreviewUrl(),
     $createdByUserId: 3,
   });
 
-  const insertRegistration = db.prepare(`
+  const insertRegistration = database.prepare(`
     INSERT INTO training_registrations (
       training_id, user_id, status, approved_by_manager, access_granted, confirmation_counter, notes, created_at
     ) VALUES (
@@ -431,7 +464,7 @@ function seedDatabase() {
     $createdAt: nowIso(),
   });
 
-  const insertTrainingResource = db.prepare(`
+  const insertTrainingResource = database.prepare(`
     INSERT INTO training_resources (training_id, title, filename, storage_path, visibility)
     VALUES ($trainingId, $title, $filename, $storagePath, $visibility)
   `);
@@ -456,6 +489,13 @@ function initDatabase() {
   ensureRuntimeFiles();
   resetDatabase();
   seedDatabase();
+}
+
+function resetPersistentState() {
+  closeDatabase();
+  fs.rmSync(dbPath, { force: true });
+  fs.rmSync(runtimeRoot, { recursive: true, force: true });
+  initDatabase();
 }
 
 function createMailboxMessage({ mailbox, subject, htmlBody, metadata }) {
@@ -553,17 +593,19 @@ function getUserByEmail(email) {
 }
 
 module.exports = {
-  db,
   run,
   get,
   all,
   exec,
   initDatabase,
+  closeDatabase,
+  resetPersistentState,
   createMailboxMessage,
   issueResetToken,
   parseJson,
   flags,
   runtimePaths,
+  getInternalPreviewUrl,
   getUserById,
   getUserByUsername,
   getUserByEmail,
