@@ -4,12 +4,12 @@ const {
   get,
   all,
   run,
-  flags,
   createMailboxMessage,
   issueResetToken,
   parseJson,
   getUserByEmail,
   getUserByUsername,
+  getUserById,
 } = require("../data/db");
 const { requireAuth, issueToken, attachCurrentUser } = require("../middleware/auth");
 
@@ -30,23 +30,6 @@ function normalizeMailbox(rawValue) {
 
 function normalizeEmail(rawValue) {
   return normalizeString(rawValue).toLowerCase();
-}
-
-function readOriginLikeHeader(rawValue) {
-  const candidate = normalizeString(rawValue);
-  if (!candidate) {
-    return { host: "", proto: "" };
-  }
-
-  try {
-    const parsed = new URL(candidate);
-    return {
-      host: parsed.host,
-      proto: parsed.protocol.replace(/:$/, ""),
-    };
-  } catch (error) {
-    return { host: "", proto: "" };
-  }
 }
 
 function getEmailCandidates(rawValue) {
@@ -98,11 +81,13 @@ router.post("/api/auth/login", (req, res) => {
 });
 
 router.post("/api/auth/forgot-password", (req, res) => {
-  const emailCandidates = getEmailCandidates(req.body.email)
-    .map(normalizeEmail)
-    .filter(Boolean);
-  const victimEmail = emailCandidates[0];
+  const rawEmailCandidates = getEmailCandidates(req.body.email);
 
+  if (rawEmailCandidates.length !== 1) {
+    return res.status(400).json({ error: "Email requis" });
+  }
+
+  const victimEmail = normalizeEmail(rawEmailCandidates[0]);
   if (!victimEmail) {
     return res.status(400).json({ error: "Email requis" });
   }
@@ -120,34 +105,10 @@ router.post("/api/auth/forgot-password", (req, res) => {
     $id: user.id,
   });
 
-  const chosenMailbox =
-    emailCandidates.length > 1
-      ? normalizeMailbox(emailCandidates[emailCandidates.length - 1])
-      : user.mailbox;
-
-  const actualRequestHost = normalizeString(req.headers.host).split(",")[0].trim();
-  const forwardedHost = normalizeString(req.headers["x-forwarded-host"])
-    .split(",")[0]
-    .trim();
-  const originMeta = readOriginLikeHeader(req.headers.origin);
-  const refererMeta = readOriginLikeHeader(req.headers.referer);
-  const requestLooksLegit =
-    originMeta.host === CANONICAL_FRONTEND_HOST ||
-    refererMeta.host === CANONICAL_FRONTEND_HOST;
-  const requestedHost = requestLooksLegit
-    ? CANONICAL_FRONTEND_HOST
-    : forwardedHost && forwardedHost !== actualRequestHost
-      ? forwardedHost
-      : actualRequestHost || CANONICAL_FRONTEND_HOST;
-  const requestedProto =
-    normalizeString(req.headers["x-forwarded-proto"]) ||
-    originMeta.proto ||
-    refererMeta.proto ||
-    CANONICAL_FRONTEND_PROTO;
-  const resetLink = `${requestedProto}://${requestedHost}/reset.html?token=${encodeURIComponent(resetToken)}`;
+  const resetLink = `${CANONICAL_FRONTEND_PROTO}://${CANONICAL_FRONTEND_HOST}/reset.html?token=${encodeURIComponent(resetToken)}`;
 
   createMailboxMessage({
-    mailbox: chosenMailbox,
+    mailbox: user.mailbox,
     subject: `Reset mot de passe - ${user.displayName}`,
     htmlBody: [
       `<p>Bonjour ${user.displayName},</p>`,
@@ -158,25 +119,32 @@ router.post("/api/auth/forgot-password", (req, res) => {
     metadata: {
       victimEmail: user.email,
       victimUsername: user.username,
-      poisoned: requestedHost !== CANONICAL_FRONTEND_HOST,
-      parameterPollution: emailCandidates.length > 1,
+      poisoned: false,
+      parameterPollution: false,
       resetLink,
       createdAt: new Date().toISOString(),
     },
   });
 
   return res.json({
-    message: "Email de reset prepare dans la boite mail simulee.",
-    mailbox: chosenMailbox,
-    previewUrl: `/api/mail-preview?mailbox=${encodeURIComponent(chosenMailbox)}`,
+    message: "Si le compte existe, un email a ete prepare.",
   });
 });
 
-router.get("/api/mail-preview", (req, res) => {
+router.get("/api/mail-preview", requireAuth, attachCurrentUser, (req, res) => {
   const mailbox = normalizeMailbox(req.query.mailbox);
 
   if (!mailbox) {
     return res.status(400).json({ error: "Mailbox requise" });
+  }
+
+  const currentUser = req.currentUser || getUserById(req.user.id);
+  if (!currentUser) {
+    return res.status(404).json({ error: "Compte introuvable" });
+  }
+
+  if (req.user.role !== "admin" && mailbox !== currentUser.mailbox) {
+    return res.status(403).json({ error: "Acces refuse a cette boite" });
   }
 
   const messages = all(
@@ -192,18 +160,9 @@ router.get("/api/mail-preview", (req, res) => {
     metadata: parseJson(message.metadataJson),
   }));
 
-  const unlockedFlags = [];
-  if (messages.some((message) => message.metadata.poisoned)) {
-    unlockedFlags.push(flags.resetPoisoning);
-  }
-  if (messages.some((message) => message.metadata.parameterPollution)) {
-    unlockedFlags.push(flags.parameterPollution);
-  }
-
   return res.json({
     mailbox,
     count: messages.length,
-    flags: unlockedFlags,
     messages,
   });
 });

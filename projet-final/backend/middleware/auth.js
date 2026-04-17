@@ -1,16 +1,10 @@
-const fs = require("fs");
-const path = require("path");
 const jwt = require("jsonwebtoken");
 
-const { runtimePaths, getUserById } = require("../data/db");
+const { getUserById } = require("../data/db");
 
-function readKeyMaterial(relativePath) {
-  const resolvedPath = path.resolve(runtimePaths.keysDir, relativePath);
-  if (!fs.existsSync(resolvedPath)) {
-    return fs.readFileSync(runtimePaths.defaultSigningKeyFile, "utf8").trim();
-  }
-  return fs.readFileSync(resolvedPath, "utf8").trim();
-}
+const DEFAULT_KID = "default-signing.key";
+const JWT_SECRET =
+  process.env.JWT_SECRET || "corphack-default-signing-key-2026-remediated";
 
 function parseTokenHeader(token) {
   const [headerPart] = String(token || "").split(".");
@@ -27,17 +21,26 @@ function parseTokenHeader(token) {
 
 function getJwtSecretForToken(token) {
   const header = parseTokenHeader(token);
-  const kid = typeof header.kid === "string" ? header.kid : "default-signing.key";
+  const kid = typeof header.kid === "string" ? header.kid : DEFAULT_KID;
+
+  if (kid !== DEFAULT_KID) {
+    throw new Error("JWT kid non autorise");
+  }
+
   return {
     header,
     kid,
-    secret: readKeyMaterial(kid),
+    secret: JWT_SECRET,
   };
 }
 
 function issueToken(user, options = {}) {
-  const kid = options.kid || "default-signing.key";
-  const secret = readKeyMaterial(kid);
+  const kid = options.kid || DEFAULT_KID;
+
+  if (kid !== DEFAULT_KID) {
+    throw new Error("JWT kid non autorise");
+  }
+
   return jwt.sign(
     {
       id: user.id,
@@ -45,7 +48,7 @@ function issueToken(user, options = {}) {
       role: user.role,
       displayName: user.displayName,
     },
-    secret,
+    JWT_SECRET,
     {
       algorithm: "HS256",
       expiresIn: "8h",
@@ -101,5 +104,4 @@ module.exports = {
   issueToken,
   parseTokenHeader,
   getJwtSecretForToken,
-  readKeyMaterial,
 };

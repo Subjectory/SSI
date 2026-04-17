@@ -8,7 +8,6 @@ const { all, get, run, flags, runtimePaths } = require("../data/db");
 const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
-const confirmationWindows = new Map();
 
 const importStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, runtimePaths.importsDir),
@@ -24,10 +23,6 @@ const importUpload = multer({
     fileSize: 10 * 1024 * 1024,
   },
 });
-
-function wait(milliseconds) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
 
 function userHasTrainingAccess(user, trainingId) {
   if (user.role === "admin" || user.role === "manager") {
@@ -187,18 +182,26 @@ router.get("/api/trainings/requests/:requestId", requireAuth, (req, res) => {
     return res.status(404).json({ error: "Demande introuvable" });
   }
 
+  const canViewRequest =
+    req.user.id === request.ownerUserId ||
+    req.user.role === "manager" ||
+    req.user.role === "admin";
+
+  if (!canViewRequest) {
+    return res.status(403).json({ error: "Acces refuse a cette demande" });
+  }
+
+  const canViewReviewCode = req.user.role === "manager" || req.user.role === "admin";
+
   return res.json({
     ...request,
-    flag: req.user.id !== request.ownerUserId ? flags.trainingBola : undefined,
-    note: "Le detail de demande devrait etre limite au proprietaire et au manager validateur.",
+    reviewCode: canViewReviewCode ? request.reviewCode : undefined,
   });
 });
 
-router.post("/api/trainings/:id/confirm", requireAuth, async (req, res) => {
+router.post("/api/trainings/:id/confirm", requireAuth, (req, res) => {
   const trainingId = Number(req.params.id);
   const reviewCode = String(req.body.reviewCode || "").trim();
-  const windowKey = `${trainingId}:${req.user.id}`;
-  const attemptStartedAt = Date.now();
 
   const training = get(
     `
@@ -242,9 +245,6 @@ router.post("/api/trainings/:id/confirm", requireAuth, async (req, res) => {
     { $id: registration.id }
   );
 
-  confirmationWindows.set(windowKey, attemptStartedAt);
-  await wait(350);
-
   const latest = get(
     `
       SELECT id, status, approved_by_manager AS approvedByManager, access_granted AS accessGranted, confirmation_counter AS confirmationCounter
@@ -253,11 +253,6 @@ router.post("/api/trainings/:id/confirm", requireAuth, async (req, res) => {
     `,
     { $id: registration.id }
   );
-  const latestAttemptAt = confirmationWindows.get(windowKey) || 0;
-  const raced =
-    latestAttemptAt !== attemptStartedAt &&
-    latestAttemptAt - attemptStartedAt >= 0 &&
-    latestAttemptAt - attemptStartedAt < 500;
 
   if (latest.approvedByManager) {
     run(
@@ -275,7 +270,7 @@ router.post("/api/trainings/:id/confirm", requireAuth, async (req, res) => {
     });
   }
 
-  if (training.approvalRequired && raced) {
+  if (!training.approvalRequired) {
     run(
       `
         UPDATE training_registrations
@@ -286,10 +281,9 @@ router.post("/api/trainings/:id/confirm", requireAuth, async (req, res) => {
     );
 
     return res.json({
-      message: "La fenetre de confirmation a ete forcee avant la revue manager.",
+      message: "Acces confirme",
       accessGranted: true,
       attempts: latest.confirmationCounter,
-      flag: flags.trainingRace,
     });
   }
 

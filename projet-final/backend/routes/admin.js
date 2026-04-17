@@ -1,10 +1,25 @@
 const express = require("express");
-const { exec } = require("child_process");
+const { execFile } = require("child_process");
+const net = require("net");
 
-const { get, flags, runtimePaths } = require("../data/db");
+const { get } = require("../data/db");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
 
 const router = express.Router();
+
+function isValidDiagnosticTarget(target) {
+  if (net.isIP(target)) {
+    return true;
+  }
+
+  if (target.length > 253) {
+    return false;
+  }
+
+  return /^(localhost|[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*)$/.test(
+    target
+  );
+}
 
 router.get("/api/admin", requireAuth, requireAdmin, (req, res) => {
   const counts = {
@@ -17,29 +32,25 @@ router.get("/api/admin", requireAuth, requireAdmin, (req, res) => {
   return res.json({
     message: "Tableau de bord admin",
     counts,
-    flag:
-      req.tokenMeta?.kid && req.tokenMeta.kid !== "default-signing.key"
-        ? flags.jwtKid
-        : undefined,
     diagnosticsHint:
-      "Le module diagnostics execute un ping shell standard. Usage reserve aux administrateurs.",
+      "Le module diagnostics execute une verification reseau sans shell. Usage reserve aux administrateurs.",
   });
 });
 
 router.post("/api/admin/diagnostics/ping", requireAuth, requireAdmin, (req, res) => {
   const target = String(req.body.target || "127.0.0.1").trim();
-  const command =
-    process.platform === "win32"
-      ? `ping -n 1 ${target}`
-      : `ping -c 1 ${target}`;
 
-  exec(command, { timeout: 5000 }, (error, stdout, stderr) => {
+  if (!isValidDiagnosticTarget(target)) {
+    return res.status(400).json({ error: "Cible de diagnostic invalide" });
+  }
+
+  const args = process.platform === "win32" ? ["-n", "1", target] : ["-c", "1", target];
+
+  execFile("ping", args, { timeout: 5000 }, (error, stdout, stderr) => {
     const output = [stdout, stderr, error?.message].filter(Boolean).join("\n");
     return res.json({
-      command,
+      command: ["ping", ...args].join(" "),
       output,
-      flag: output.includes(flags.commandInjection) ? flags.commandInjection : undefined,
-      hint: `Fichier pivot local: ${runtimePaths.finalFlagFile}`,
     });
   });
 });

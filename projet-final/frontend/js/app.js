@@ -403,19 +403,14 @@ async function handleForgotPassword(event) {
 
     setStatus("forgotStatus", data.message, "success");
 
-    if (data.mailbox) {
-      setOutput(
-        "forgotResult",
-        `
-          <p class="helper-text">
-            Le message de recuperation a ete prepare.
-            <a class="link-inline" href="mailbox.html?mailbox=${encodeURIComponent(
-              data.mailbox
-            )}">Ouvrir le centre de messages</a>
-          </p>
-        `
-      );
-    }
+    setOutput(
+      "forgotResult",
+      `
+        <p class="helper-text">
+          Si cette adresse correspond a un compte, le message de recuperation est disponible dans la boite interne du compte concerne.
+        </p>
+      `
+    );
   } catch (error) {
     setStatus("forgotStatus", error.message, "error");
   }
@@ -450,10 +445,7 @@ async function loadMailbox(mailboxValue) {
   }
 
   try {
-    const data = await apiFetch(
-      `/api/mail-preview?mailbox=${encodeURIComponent(mailbox)}`,
-      { auth: false }
-    );
+    const data = await apiFetch(`/api/mail-preview?mailbox=${encodeURIComponent(mailbox)}`);
 
     const messagesHtml = data.messages.length
       ? data.messages
@@ -1315,11 +1307,14 @@ function initResetPage() {
   document.getElementById("resetForm").addEventListener("submit", handleResetPassword);
 }
 
-function initMailboxPage() {
+function initMailboxPage(user) {
   const mailbox = new URLSearchParams(window.location.search).get("mailbox");
   if (mailbox) {
     document.getElementById("mailboxName").value = mailbox;
     loadMailbox(mailbox);
+  } else if (user?.mailbox) {
+    document.getElementById("mailboxName").value = user.mailbox;
+    loadMailbox(user.mailbox);
   } else {
     setOutput("mailboxResult", renderEmptyState("Chargez une boite pour consulter les messages de recuperation."));
   }
@@ -1345,7 +1340,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         initResetPage();
         break;
       case "mailbox":
-        initMailboxPage();
+        initMailboxPage(await requireAuth());
         break;
       case "dashboard": {
         const user = await requireAuth();
