@@ -6,3 +6,4 @@
 - Victor MARAND (Purple)
 
 Vidéo Red Team : https://youtu.be/q-oJcMcXz_o
+Vidéo Bleu Team : https://youtu.be/7S6cxli-znM
